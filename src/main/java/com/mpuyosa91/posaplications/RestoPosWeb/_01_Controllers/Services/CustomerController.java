@@ -12,7 +12,6 @@ import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.*;
 import com.mpuyosa91.posaplications.RestoPosWeb._01_Controllers.Model_Helpers;
 import com.mpuyosa91.posaplications.RestoPosWeb._01_Controllers.Place.PrinterController;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -30,8 +29,6 @@ import static java.lang.Math.round;
 public class CustomerController {
 
     private static final PrinterModel PRINTER = new PrinterModel();
-    @Value("${server.port}")
-    private static       Integer      server_port;
 
     private final CustomerRepository    customerRepository;
     private final SiteRepository        siteRepository;

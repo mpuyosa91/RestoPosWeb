@@ -10,19 +10,16 @@ import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.Customer
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.SiteRepository;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.mpuyosa91.posaplications.RestoPosWeb._01_Controllers.Model_Helpers.*;
 
@@ -30,73 +27,65 @@ import static com.mpuyosa91.posaplications.RestoPosWeb._01_Controllers.Model_Hel
 @RequestMapping(path = "/site")
 public class SiteController {
 
+    private final Environment        environment;
     private final SiteRepository     siteRepository;
     private final UserRepository     userRepository;
     private final CustomerRepository customerRepository;
-    @Value("${server.port}")
-    private       Integer            server_port;
 
     @Autowired
     public SiteController(SiteRepository siteRepository,
                           UserRepository userRepository,
-                          CustomerRepository customerRepository) {
+                          CustomerRepository customerRepository, Environment environment) {
         this.siteRepository = siteRepository;
         this.userRepository = userRepository;
         this.customerRepository = customerRepository;
+        this.environment = environment;
     }
 
     @PostMapping(path = "/")
-    public ResponseEntity<Object> create(@RequestBody Site site) {
+    public @ResponseBody
+    Site create(@RequestBody Site site) {
 
-        AtomicReference<Site> savedSite = new AtomicReference<>(siteRepository.save(site));
+        String server_port = environment.getProperty("local.server.port");
+
+        Site savedSite = siteRepository.save(site);
 
         RestTemplate restTemplate = new RestTemplate();
 
-        PointOfService pointOfService = restTemplate
-                .postForObject(
-                        "http://localhost:" + server_port.toString() + "/customer/PointOfService",
-                        new PointOfService(),
-                        PointOfService.class);
+        PointOfService pointOfService = restTemplate.postForObject(
+                "http://localhost:" + server_port + "/customer/PointOfService",
+                new PointOfService(),
+                PointOfService.class);
 
-        if (pointOfService != null) {
-            Map<String, String> addPointOfServiceJson = new HashMap<>();
-            addPointOfServiceJson.put("site", savedSite.get().getId().toString());
-            addPointOfServiceJson.put("customer", pointOfService.getId().toString());
-            restTemplate
-                    .postForObject(
-                            "http://localhost:" + server_port.toString() + "/customer/add_to_site",
-                            addPointOfServiceJson,
-                            PointOfService.class);
-        }
+        Map<String, String> addPointOfServiceJson = new HashMap<>();
+        addPointOfServiceJson.put("site", savedSite.getId().toString());
+        addPointOfServiceJson.put("customer", pointOfService != null ? pointOfService.getId().toString() : null);
 
-        ExternalCustomer externalCustomer = restTemplate
-                .postForObject(
-                        "http://localhost:" + server_port.toString() + "/customer/ExternalCustomer",
-                        new ExternalCustomer(),
-                        ExternalCustomer.class);
+        restTemplate.put(
+                "http://localhost:" + server_port + "/customer/add_to_site",
+                addPointOfServiceJson,
+                PointOfService.class);
 
-        if (externalCustomer != null) {
-            Map<String, String> addExternalCustomerJson = new HashMap<>();
-            addExternalCustomerJson.put("site", savedSite.get().getId().toString());
-            addExternalCustomerJson.put("customer", externalCustomer.getId().toString());
-            restTemplate
-                    .postForObject(
-                            "http://localhost:" + server_port.toString() + "/customer/add_to_site",
-                            addExternalCustomerJson,
-                            ExternalCustomer.class);
-        }
+        ExternalCustomer externalCustomer = restTemplate.postForObject(
+                "http://localhost:" + server_port + "/customer/ExternalCustomer",
+                new ExternalCustomer(),
+                ExternalCustomer.class);
 
-        savedSite.set(siteRepository.save(site));
+        Map<String, String> addExternalCustomerJson = new HashMap<>();
+        addExternalCustomerJson.put("site", savedSite.getId().toString());
+        addExternalCustomerJson.put("customer", externalCustomer != null ? externalCustomer.getId().toString() : null);
 
-        URI location = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(savedSite.get().getId()).toUri();
-        return ResponseEntity.created(location).build();
+        restTemplate.put(
+                "http://localhost:" + server_port + "/customer/add_to_site",
+                addExternalCustomerJson,
+                ExternalCustomer.class);
+
+        return siteRepository.save(savedSite);
     }
 
     @PostMapping(path = "/createTable/{site_id}")
     public ResponseEntity createTable(@PathVariable UUID site_id, @RequestBody CustomerTable customer) {
+        String server_port = environment.getProperty("local.server.port");
 
         if (siteRepository.findById(site_id).isPresent()) {
             Site site = siteRepository.findById(site_id).get();
@@ -105,7 +94,7 @@ public class SiteController {
 
             CustomerTable customerTable = restTemplate
                     .postForObject(
-                            "http://localhost:" + server_port.toString() + "/customer/Table",
+                            "http://localhost:" + server_port + "/customer/Table",
                             customer,
                             CustomerTable.class);
 
@@ -116,7 +105,7 @@ public class SiteController {
 
                 ResponseEntity responseEntity = restTemplate
                         .postForEntity(
-                                "http://localhost:" + server_port.toString() + "/customer/add_to_site",
+                                "http://localhost:" + server_port + "/customer/add_to_site",
                                 addCustomerTableJson,
                                 ResponseEntity.class);
 
@@ -159,6 +148,34 @@ public class SiteController {
         return siteRepository.findAll();
     }
 
+    @PutMapping(path = "/enable")
+    public ResponseEntity<Object> enable(@RequestBody Map<String, UUID> json) {
+
+        boolean canEnable = json.get("site") != null && siteRepository.findById(json.get("site")).isPresent();
+
+        if (canEnable) {
+            Site site = siteRepository.findById(json.get("site")).get();
+            site.setEnabled(true);
+            siteRepository.save(site);
+        }
+
+        return (canEnable) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
+    }
+
+    @PutMapping(path = "/disable")
+    public ResponseEntity<Object> disable(@RequestBody Map<String, UUID> json) {
+
+        boolean canDisable = json.get("site") != null && siteRepository.findById(json.get("site")).isPresent();
+
+        if (canDisable) {
+            Site site = siteRepository.findById(json.get("site")).get();
+            site.setEnabled(false);
+            siteRepository.save(site);
+        }
+
+        return (canDisable) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
+    }
+
     @PutMapping(path = "/{id}")
     public ResponseEntity update(@PathVariable UUID id, @RequestBody Site site) {
 
@@ -167,6 +184,7 @@ public class SiteController {
         Site siteToUpdate = (siteRepository.findById(id).isPresent()) ? siteRepository.findById(id).get() : null;
 
         if (siteToUpdate != null) {
+            // TODO: Agregar otros updates
             if (site.getUsers() != null) siteToUpdate.getUsers().addAll(site.getUsers());
             if (site.getCustomers() != null) siteToUpdate.getCustomers().addAll(site.getCustomers());
             siteRepository.save(siteToUpdate);
@@ -178,6 +196,34 @@ public class SiteController {
         return responseEntity;
     }
 
+    @PutMapping(path = "/add_user")
+    public ResponseEntity<Object> addUserToSite(@RequestBody Map<String, UUID> json) {
+        return (link_site_user(json, userRepository, siteRepository)) ?
+                ResponseEntity.accepted().build() :
+                ResponseEntity.badRequest().build();
+    }
+
+    @PutMapping(path = "/remove_user")
+    public ResponseEntity<Object> removeUserFromSite(@RequestBody Map<String, UUID> json) {
+        return (unlink_site_user(json, userRepository, siteRepository)) ?
+                ResponseEntity.accepted().build() :
+                ResponseEntity.badRequest().build();
+    }
+
+    @PutMapping(path = "/add_customer")
+    public ResponseEntity<Object> addCustomerToSite(@RequestBody Map<String, UUID> json) {
+        return (link_site_customer(json, siteRepository, customerRepository)) ?
+                ResponseEntity.accepted().build() :
+                ResponseEntity.badRequest().build();
+    }
+
+    @PutMapping(path = "/remove_customer")
+    public ResponseEntity<Object> removeCustomerFromSite(@RequestBody Map<String, UUID> json) {
+        return (unlink_site_customer(json, siteRepository, customerRepository)) ?
+                ResponseEntity.accepted().build() :
+                ResponseEntity.badRequest().build();
+    }
+
     @DeleteMapping(path = "/{id}")
     public ResponseEntity delete(@PathVariable UUID id) {
         try {
@@ -187,60 +233,6 @@ public class SiteController {
             return ResponseEntity.badRequest().build();
         }
 
-    }
-
-    @PostMapping(path = "/enable")
-    public ResponseEntity<Object> enable(@RequestBody Map<String, UUID> json) {
-
-        boolean canEnable = json.get("site") != null && siteRepository.findById(json.get("site")).isPresent();
-
-        if (canEnable) {
-            Site site = siteRepository.findById(json.get("site")).get();
-            site.setEnabled(true);
-        }
-
-        return (canEnable) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
-    }
-
-    @PostMapping(path = "/disable")
-    public ResponseEntity<Object> disable(@RequestBody Map<String, UUID> json) {
-
-        boolean canDisable = json.get("site") != null && siteRepository.findById(json.get("site")).isPresent();
-
-        if (canDisable) {
-            Site site = siteRepository.findById(json.get("site")).get();
-            site.setEnabled(false);
-        }
-
-        return (canDisable) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
-    }
-
-    @PostMapping(path = "/add_user")
-    public ResponseEntity<Object> addUserToSite(@RequestBody Map<String, UUID> json) {
-        return (link_site_user(json, userRepository, siteRepository)) ?
-                ResponseEntity.accepted().build() :
-                ResponseEntity.badRequest().build();
-    }
-
-    @PostMapping(path = "/remove_user")
-    public ResponseEntity<Object> removeUserFromSite(@RequestBody Map<String, UUID> json) {
-        return (unlink_site_user(json, userRepository, siteRepository)) ?
-                ResponseEntity.accepted().build() :
-                ResponseEntity.badRequest().build();
-    }
-
-    @PostMapping(path = "/add_customer")
-    public ResponseEntity<Object> addCustomerToSite(@RequestBody Map<String, UUID> json) {
-        return (link_site_customer(json, siteRepository, customerRepository)) ?
-                ResponseEntity.accepted().build() :
-                ResponseEntity.badRequest().build();
-    }
-
-    @PostMapping(path = "/remove_customer")
-    public ResponseEntity<Object> removeCustomerFromSite(@RequestBody Map<String, UUID> json) {
-        return (unlink_site_customer(json, siteRepository, customerRepository)) ?
-                ResponseEntity.accepted().build() :
-                ResponseEntity.badRequest().build();
     }
 
 }

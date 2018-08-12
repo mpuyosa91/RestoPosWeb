@@ -98,4 +98,18 @@ public class Site {
     public void setCommandNumber(int commandNumber) {
         this.commandNumber = commandNumber;
     }
+
+    @Override
+    public String toString() {
+        return "Site{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", billing_name='" + billing_name + '\'' +
+                ", nit='" + nit + '\'' +
+                ", enabled=" + enabled +
+                ", users=" + users +
+                ", customers=" + customers +
+                ", commandNumber=" + commandNumber +
+                '}';
+    }
 }

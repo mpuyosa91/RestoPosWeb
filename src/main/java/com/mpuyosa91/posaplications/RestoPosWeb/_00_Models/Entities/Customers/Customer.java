@@ -169,15 +169,24 @@ public class Customer implements ICustomer {
     }
 
     public Calendar getDateTimeFinal() {
-        return currentBill.getDateTimeFinal();
+        Calendar r = null;
+        if (getCurrentBill() != null)
+            r = currentBill.getDateTimeFinal();
+        return r;
     }
 
     public Calendar getDateTimeStart() {
-        return currentBill.getDateTimeStart();
+        Calendar r = null;
+        if (getCurrentBill() != null)
+            r = currentBill.getDateTimeStart();
+        return r;
     }
 
     public long getDurationInSeconds() {
-        return currentBill.getDurationInSeconds();
+        long r = 0;
+        if (getCurrentBill() != null)
+            r = currentBill.getDurationInSeconds();
+        return r;
     }
 
     public double getConsumption() {
@@ -230,5 +239,21 @@ public class Customer implements ICustomer {
         if (getCurrentBill() != null)
             r = getCurrentBill().calculateConsumption();
         return r;
+    }
+
+    @Override
+    public String toString() {
+        return "Customer{" +
+                "itemListBilled=" + itemListBilled +
+                ", itemListUnBilled=" + itemListUnBilled +
+                ", identifier='" + identifier + '\'' +
+                ", server_port=" + server_port +
+                ", id=" + id +
+                ", site=" + site +
+                ", enabled=" + enabled +
+                ", currentBill=" + currentBill +
+                ", consumption=" + consumption +
+                ", orderNum=" + orderNum +
+                '}';
     }
 }
