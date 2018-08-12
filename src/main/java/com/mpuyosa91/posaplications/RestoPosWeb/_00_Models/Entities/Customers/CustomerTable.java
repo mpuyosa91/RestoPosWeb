@@ -40,7 +40,7 @@ public class CustomerTable extends Customer {
             customerTable.link(false, this);
             setMasterLinker(null);
             getLinkedCustomerTables().add(new CustomerTable_Link(this, customerTable));
-            getCurrentBill().getCustomers().add(customerTable);
+            getCurrentBill().addCustomer(customerTable);
         } else {
             setMasterLinker(customerTable);
             setLinkedCustomerTables(new HashSet<>());
@@ -52,7 +52,7 @@ public class CustomerTable extends Customer {
         if (!getLinkedCustomerTables().isEmpty()) {
             for (CustomerTable_Link customerTable_link : getLinkedCustomerTables()) {
                 customerTable_link.getPk().getLinkedCustomerTable().unlink();
-                getCurrentBill().getCustomers().remove(customerTable_link.getLinkedCustomerTable());
+                getCurrentBill().removeCustomer(customerTable_link.getLinkedCustomerTable());
             }
         }
         setMasterLinker(null);

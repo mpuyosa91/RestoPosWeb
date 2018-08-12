@@ -177,6 +177,8 @@ public class CustomerController {
                     inventoryRepository.findById(inventoryItem_id).isPresent() &&
                     (json.get("notes") != null);
 
+            // TODO: Verificar que el usuario y el item si sean de la sede.
+
             if (canAdd) {
 
                 Customer customer = customerRepository.findById(id).get();
@@ -240,6 +242,8 @@ public class CustomerController {
 
                 Customer customer = customerRepository.findById(id).get();
 
+                printCommand(customer, "CognitiveTPG Receipt");
+
                 // UUID kitchen_id = UUID.fromString(json.get("kitchen"));
                 // Kitchen kitchen = kitchenRepository.findById(kitchen_id).get();
                 // kitchen.sendToKitchen(customer,kitchen);
@@ -296,104 +300,6 @@ public class CustomerController {
             return ResponseEntity.badRequest().build();
         }
 
-    }
-
-    private boolean openTrack(String printerName) {
-        PRINTER.resetAll();
-        PRINTER.initialize();
-        PRINTER.finitOnlyDrawer();
-        return PrinterModel.feedPrinter(PRINTER.finalCommandSet().getBytes(), printerName);
-        //"CognitiveTPG Receipt"
-    }
-
-    private boolean printBill(Bill bill, String printerName) {
-        String line44;
-        int idLen = 5,
-                priceLen = 6,
-                quantLen = 4,
-                subTLen = 7,
-                itemLen = PRINTER.getLineSize() - (idLen + priceLen + quantLen + subTLen);
-        PRINTER.resetAll();
-        PRINTER.initialize();
-        PRINTER.feedBack((byte) 2);
-        PRINTER.setFont(4, true);
-        PRINTER.setTextLeft(PrinterController.billHeader());
-        PRINTER.setFont(2, false);
-        PRINTER.addLineSeperator();
-        PRINTER.newLine();
-        PRINTER.setTextRight(String.valueOf(bill.getConsecutive()));
-        PRINTER.newLine();
-        PRINTER.setTextLeft(PrinterController.dateTimeHeader(Calendar.getInstance()));
-        Customer customer = bill.getCustomers().iterator().next();
-        PRINTER.setTextLeft(customer.getIdentifier());
-        PRINTER.newLine();
-        PRINTER.addLineSeperator();
-        PRINTER.newLine();
-        PRINTER.setTextCenter(" - Detalles de Compra - ");
-        PRINTER.newLine();
-        PRINTER.addLineSeperator();
-        PRINTER.newLine();
-        line44 = PrinterController
-                .stringToLeftAndFill("Nro", idLen - 1, "fill")
-                .concat(" ");
-        line44 += PrinterController
-                .stringToLeftAndFill("Item", itemLen - 1, "truncate")
-                .concat(" ");
-        line44 += PrinterController
-                .stringToRightAndFill("Prec", priceLen - 1, "fill")
-                .concat(" ");
-        line44 += PrinterController
-                .stringToRightAndFill("#", quantLen - 1, "fill")
-                .concat(" ");
-        line44 += PrinterController
-                .stringToRightAndFill("SubT.", subTLen, "fill");
-        PRINTER.setTextLeft(line44);
-        PRINTER.newLine();
-        PRINTER.addLineSeperator();
-        PRINTER.newLine();
-
-        for (Map.Entry<UUID, Integer> entry : bill.getSalableQuantityMap().entrySet()) {
-
-            SalableItem salableItem = bill.getSalableItemMap().get(entry.getKey());
-
-            String id = String.valueOf(salableItem.getSerial());
-            line44 = PrinterController
-                    .stringToLeftAndFill(id, idLen - 1, "fill")
-                    .concat(" ");
-            String name = salableItem.getName();
-            line44 += PrinterController
-                    .stringToLeftAndFill(name, itemLen - 1, "truncate")
-                    .concat(" ");
-            String price = String.valueOf((int) salableItem.getPrice());
-            line44 += PrinterController
-                    .stringToRightAndFill(price, priceLen - 1, "fill")
-                    .concat(" ");
-
-            String quantity = String.valueOf((int) entry.getValue());
-            line44 += PrinterController
-                    .stringToRightAndFill(quantity, quantLen - 1, "fill")
-                    .concat(" ");
-
-            String subT = String.valueOf((int) (salableItem.getPrice() * entry.getValue()));
-            line44 += PrinterController
-                    .stringToRightAndFill(subT, subTLen, "fill");
-
-            PRINTER.setTextLeft(line44);
-            PRINTER.newLine();
-        }
-
-        PRINTER.addLineSeperator();
-        PRINTER.newLine();
-        PRINTER.setTextRight("Total: " + bill.getConsumption().intValue());
-        PRINTER.newLine();
-        PRINTER.addLineSeperator();
-        PRINTER.newLine();
-        PRINTER.setTextCenter("Gracias por su Compra");
-        PRINTER.newLine();
-        PRINTER.setTextCenter("Nuestro Placer es Servirle");
-        PRINTER.feed((byte) 3);
-        PRINTER.finitWithDrawer();
-        return PrinterModel.feedPrinter(PRINTER.finalCommandSet().getBytes(), printerName);
     }
 
     private boolean printCommand(Customer customer, String printerName) {
@@ -467,6 +373,104 @@ public class CustomerController {
         }
 
         return r;
+    }
+
+    private boolean openTrack(String printerName) {
+        PRINTER.resetAll();
+        PRINTER.initialize();
+        PRINTER.finitOnlyDrawer();
+        return PrinterModel.feedPrinter(PRINTER.finalCommandSet().getBytes(), printerName);
+        //"CognitiveTPG Receipt"
+    }
+
+    private boolean printBill(Bill bill, String printerName) {
+        String line44;
+        int idLen = 5,
+                priceLen = 6,
+                quantLen = 4,
+                subTLen = 7,
+                itemLen = PRINTER.getLineSize() - (idLen + priceLen + quantLen + subTLen);
+        PRINTER.resetAll();
+        PRINTER.initialize();
+        PRINTER.feedBack((byte) 2);
+        PRINTER.setFont(4, true);
+        PRINTER.setTextLeft(PrinterController.billHeader());
+        PRINTER.setFont(2, false);
+        PRINTER.addLineSeperator();
+        PRINTER.newLine();
+        PRINTER.setTextRight(String.valueOf(bill.getConsecutive()));
+        PRINTER.newLine();
+        PRINTER.setTextLeft(PrinterController.dateTimeHeader(Calendar.getInstance()));
+        Customer customer = bill.getFirstCustomer();
+        PRINTER.setTextLeft(customer.getIdentifier());
+        PRINTER.newLine();
+        PRINTER.addLineSeperator();
+        PRINTER.newLine();
+        PRINTER.setTextCenter(" - Detalles de Compra - ");
+        PRINTER.newLine();
+        PRINTER.addLineSeperator();
+        PRINTER.newLine();
+        line44 = PrinterController
+                .stringToLeftAndFill("Nro", idLen - 1, "fill")
+                .concat(" ");
+        line44 += PrinterController
+                .stringToLeftAndFill("Item", itemLen - 1, "truncate")
+                .concat(" ");
+        line44 += PrinterController
+                .stringToRightAndFill("Prec", priceLen - 1, "fill")
+                .concat(" ");
+        line44 += PrinterController
+                .stringToRightAndFill("#", quantLen - 1, "fill")
+                .concat(" ");
+        line44 += PrinterController
+                .stringToRightAndFill("SubT.", subTLen, "fill");
+        PRINTER.setTextLeft(line44);
+        PRINTER.newLine();
+        PRINTER.addLineSeperator();
+        PRINTER.newLine();
+
+        for (Map.Entry<UUID, Integer> entry : bill.getSalableQuantityMap().entrySet()) {
+
+            SalableItem salableItem = bill.getSalableItemMap().get(entry.getKey());
+
+            String id = String.valueOf(salableItem.getSerial());
+            line44 = PrinterController
+                    .stringToLeftAndFill(id, idLen - 1, "fill")
+                    .concat(" ");
+            String name = salableItem.getName();
+            line44 += PrinterController
+                    .stringToLeftAndFill(name, itemLen - 1, "truncate")
+                    .concat(" ");
+            String price = String.valueOf((int) salableItem.getPrice());
+            line44 += PrinterController
+                    .stringToRightAndFill(price, priceLen - 1, "fill")
+                    .concat(" ");
+
+            String quantity = String.valueOf((int) entry.getValue());
+            line44 += PrinterController
+                    .stringToRightAndFill(quantity, quantLen - 1, "fill")
+                    .concat(" ");
+
+            String subT = String.valueOf((int) (salableItem.getPrice() * entry.getValue()));
+            line44 += PrinterController
+                    .stringToRightAndFill(subT, subTLen, "fill");
+
+            PRINTER.setTextLeft(line44);
+            PRINTER.newLine();
+        }
+
+        PRINTER.addLineSeperator();
+        PRINTER.newLine();
+        PRINTER.setTextRight("Total: " + bill.getConsumption().intValue());
+        PRINTER.newLine();
+        PRINTER.addLineSeperator();
+        PRINTER.newLine();
+        PRINTER.setTextCenter("Gracias por su Compra");
+        PRINTER.newLine();
+        PRINTER.setTextCenter("Nuestro Placer es Servirle");
+        PRINTER.feed((byte) 3);
+        PRINTER.finitWithDrawer();
+        return PrinterModel.feedPrinter(PRINTER.finalCommandSet().getBytes(), printerName);
     }
 
 }

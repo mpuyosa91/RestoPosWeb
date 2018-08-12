@@ -3,7 +3,6 @@ package com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Customers;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Accounting.Bill;
-import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Accounting.Bill_User;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Crew.User;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.InventoryItem;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.SalableItem;
@@ -25,11 +24,11 @@ import java.util.UUID;
 public class Customer implements ICustomer {
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
-    @Where(clause = "closed=false and billed=true")
-    Set<SalableItem> itemListBilled   = new HashSet<>();
+    @Where(clause = "delivered=false and billed=true")
+    Set<SalableItem> itemListBilled;
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
-    @Where(clause = "closed=false and billed=false")
-    Set<SalableItem> itemListUnBilled = new HashSet<>();
+    @Where(clause = "delivered=false and billed=false")
+    Set<SalableItem> itemListUnBilled;
     String identifier = ICustomer.CustomerTypes.GenericCustomer.getShowableName();
     @Value("${server.port}")
     private Integer server_port;
@@ -46,7 +45,7 @@ public class Customer implements ICustomer {
     @JoinColumn(name = "current_bill_id")
     private Bill   currentBill;
     private double consumption;
-    private int    orderNum;
+    private int    orderNum = 1;
 
     Customer() {
         consumption = calculateConsumption();
@@ -75,11 +74,26 @@ public class Customer implements ICustomer {
 
     public SalableItem addItem(User user, InventoryItem inventoryItem, String notes) {
 
-        SalableItem salableItem = new SalableItem();
-        salableItem.setCustomer(this);
+        if (this.getCurrentBill() == null) {
+
+            Integer consecutive = (new RestTemplate()).getForObject(
+                    "http://localhost:" + server_port.toString() +
+                            "/bill/consecutive/" + site.getId().toString(),
+                    Integer.class
+            );
+
+            Bill bill = new Bill();
+            if (consecutive != null && consecutive > 0) bill.setConsecutive(consecutive);
+            else bill.setConsecutive(1);
+            bill.setSite(getSite());
+            bill.addCustomer(this);
+            bill.setDateTimeStart(Calendar.getInstance());
+            this.setCurrentBill(bill);
+
+        }
+
+        SalableItem salableItem = new SalableItem(inventoryItem, notes);
         salableItem.setUser(user);
-        salableItem.setInventoryItem(inventoryItem);
-        salableItem.setNotes(notes);
         itemListUnBilled.add(salableItem);
         return salableItem;
 
@@ -89,41 +103,13 @@ public class Customer implements ICustomer {
 
         if (!itemListUnBilled.isEmpty()) {
 
-            if (this.getCurrentBill() == null) {
-
-                Integer consecutive = (new RestTemplate()).getForObject(
-                        "http://localhost:" + server_port.toString() +
-                                "/bill/consecutive/" + site.getId().toString(),
-                        Integer.class
-                );
-
-                Bill bill = new Bill();
-                if (consecutive != null && consecutive > 0) bill.setConsecutive(consecutive);
-                else bill.setConsecutive(1);
-                bill.setSite(getSite());
-                bill.getCustomers().add(this);
-                this.setCurrentBill(bill);
-            }
-
             for (SalableItem item : itemListUnBilled) {
-
-                boolean user_not_found = true;
-                for (Bill_User bill_user : getCurrentBill().getBill_users()) {
-                    if (bill_user.getUser().getId().equals(item.getUser().getId())) {
-                        user_not_found = false;
-                        break;
-                    }
-                }
-
-                if (user_not_found) currentBill.getBill_users().add(
-                        new Bill_User(getSite(), item.getUser(), getCurrentBill())
-                );
 
                 item.setBill(this.getCurrentBill());
                 item.setBilled(true);
                 item.setOrderTime(Calendar.getInstance());
 
-                getCurrentBill().getSalableItems().add(item);
+                getCurrentBill().addItem(item);
             }
 
             itemListBilled.addAll(itemListUnBilled);
@@ -142,6 +128,8 @@ public class Customer implements ICustomer {
     }
 
     public Set<SalableItem> getItemListUnBilled() {
+        if (itemListUnBilled == null)
+            this.setItemListUnBilled(new HashSet<>());
         return itemListUnBilled;
     }
 
@@ -150,6 +138,8 @@ public class Customer implements ICustomer {
     }
 
     public Set<SalableItem> getItemListBilled() {
+        if (itemListBilled == null)
+            this.setItemListBilled(new HashSet<>());
         return itemListBilled;
     }
 
@@ -159,10 +149,6 @@ public class Customer implements ICustomer {
 
     public int getOrderNum() {
         return orderNum;
-    }
-
-    public void setOrderNum(int orderNum) {
-        this.orderNum = orderNum;
     }
 
     public Bill evacuate() {
@@ -182,12 +168,10 @@ public class Customer implements ICustomer {
         }
     }
 
-    @Override
     public Calendar getDateTimeFinal() {
         return currentBill.getDateTimeFinal();
     }
 
-    @Override
     public Calendar getDateTimeStart() {
         return currentBill.getDateTimeStart();
     }
@@ -200,14 +184,9 @@ public class Customer implements ICustomer {
         return consumption;
     }
 
-    public void setConsumption(double consumption) {
-        this.consumption = consumption;
-    }
-
     public double getPreConsumption() {
         double r = calculateConsumption();
-        for (SalableItem item :
-                itemListUnBilled) {
+        for (SalableItem item : getItemListUnBilled()) {
             r += item.getPrice();
         }
         return r;
@@ -248,10 +227,8 @@ public class Customer implements ICustomer {
 
     private double calculateConsumption() {
         double r = 0;
-        for (SalableItem item :
-                itemListBilled) {
-            r += item.getPrice();
-        }
+        if (getCurrentBill() != null)
+            r = getCurrentBill().calculateConsumption();
         return r;
     }
 }

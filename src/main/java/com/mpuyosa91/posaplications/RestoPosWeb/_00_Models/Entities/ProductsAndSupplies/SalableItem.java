@@ -31,10 +31,6 @@ public class SalableItem {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne
-    @JoinColumn(name = "inventoryitem_id")
-    private InventoryItem inventoryItem;
-
     private String notes;
 
     @Enumerated(EnumType.STRING)
@@ -50,6 +46,14 @@ public class SalableItem {
     private Calendar orderTime;
     private Calendar readyTime;
     private Calendar deliveryTime;
+
+    public SalableItem(InventoryItem inventoryItem, String notes) {
+        this.notes = notes;
+        this.setType(inventoryItem.getType());
+        this.setName(inventoryItem.getName());
+        this.setSerial(inventoryItem.getSerial());
+        this.setPrice(inventoryItem.getPrice());
+    }
 
     public UUID getId() {
         return id;
@@ -81,18 +85,6 @@ public class SalableItem {
 
     public void setUser(User user) {
         this.user = user;
-    }
-
-    public InventoryItem getInventoryItem() {
-        return inventoryItem;
-    }
-
-    public void setInventoryItem(InventoryItem inventoryItem) {
-        this.setType(inventoryItem.getType());
-        this.setName(inventoryItem.getName());
-        this.setSerial(inventoryItem.getSerial());
-        this.setPrice(inventoryItem.getPrice());
-        this.inventoryItem = inventoryItem;
     }
 
     public InventoryItem.Type getType() {

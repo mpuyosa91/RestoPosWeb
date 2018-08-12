@@ -28,9 +28,6 @@ public class Bill {
     @OneToMany(mappedBy = "bill", cascade = CascadeType.ALL)
     private Set<SalableItem> salableItems;
 
-    @OneToMany(mappedBy = "pk.bill", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Bill_User> bill_users;
-
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "customer_bill",
@@ -67,6 +64,8 @@ public class Bill {
     }
 
     public Set<SalableItem> getSalableItems() {
+        if (salableItems == null)
+            this.setSalableItems(new HashSet<>());
         return salableItems;
     }
 
@@ -103,38 +102,35 @@ public class Bill {
         return map;
     }
 
-    public void calculateConsumption() {
+    public void addItem(SalableItem salableItem) {
+        getSalableItems().add(salableItem);
+        calculateConsumption();
+    }
+
+    public double calculateConsumption() {
+
         double total_consumption = 0;
 
         for (Map.Entry<UUID, Integer> entry : this.getSalableQuantityMap().entrySet()) {
-
             SalableItem salableItem = this.getSalableItemMap().get(entry.getKey());
-
             total_consumption += salableItem.getPrice() * entry.getValue();
         }
+
         setConsumption(total_consumption);
+
+        return total_consumption;
     }
 
-    public Set<Bill_User> getBill_users() {
-        if (bill_users == null) {
-            this.setBill_users(new HashSet<>());
-        }
-        return bill_users;
+    public boolean addCustomer(Customer customer) {
+        return getCustomers().add(customer);
     }
 
-    public void setBill_users(Set<Bill_User> bill_users) {
-        this.bill_users = bill_users;
+    public boolean removeCustomer(Customer customer) {
+        return getCustomers().remove(customer);
     }
 
-    public Set<Customer> getCustomers() {
-        if (customers == null) {
-            this.setCustomers(new HashSet<>());
-        }
-        return customers;
-    }
-
-    public void setCustomers(Set<Customer> customers) {
-        this.customers = customers;
+    public Customer getFirstCustomer() {
+        return getCustomers().iterator().next();
     }
 
     public Double getConsumption() {
@@ -171,5 +167,16 @@ public class Bill {
 
     public void setDateTimeFinal(Calendar dateTimeFinal) {
         this.dateTimeFinal = dateTimeFinal;
+    }
+
+    public Set<Customer> getCustomers() {
+        if (customers == null) {
+            this.setCustomers(new HashSet<>());
+        }
+        return customers;
+    }
+
+    public void setCustomers(Set<Customer> customers) {
+        this.customers = customers;
     }
 }
