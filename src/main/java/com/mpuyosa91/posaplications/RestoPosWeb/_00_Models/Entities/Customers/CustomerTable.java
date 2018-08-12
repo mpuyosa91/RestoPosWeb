@@ -39,12 +39,8 @@ public class CustomerTable extends Customer {
         if (amIMaster) {
             customerTable.link(false, this);
             setMasterLinker(null);
-            CustomerTable_Link_Id customerTable_link_id = new CustomerTable_Link_Id();
-            customerTable_link_id.setMasterCustomerTable(this);
-            customerTable_link_id.setLinkedCustomerTable(customerTable);
-            CustomerTable_Link customerTable_link = new CustomerTable_Link();
-            customerTable_link.setPk(customerTable_link_id);
-            getLinkedCustomerTables().add(customerTable_link);
+            getLinkedCustomerTables().add(new CustomerTable_Link(this, customerTable));
+            getCurrentBill().getCustomers().add(customerTable);
         } else {
             setMasterLinker(customerTable);
             setLinkedCustomerTables(new HashSet<>());
@@ -56,6 +52,7 @@ public class CustomerTable extends Customer {
         if (!getLinkedCustomerTables().isEmpty()) {
             for (CustomerTable_Link customerTable_link : getLinkedCustomerTables()) {
                 customerTable_link.getPk().getLinkedCustomerTable().unlink();
+                getCurrentBill().getCustomers().remove(customerTable_link.getLinkedCustomerTable());
             }
         }
         setMasterLinker(null);

@@ -7,10 +7,7 @@ import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndS
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Site;
 
 import javax.persistence.*;
-import java.util.Calendar;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Entity
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
@@ -42,7 +39,8 @@ public class Bill {
     private Set<Customer> customers;
 
     private Double   consumption;
-    private Calendar datetimeBilling;
+    private Calendar dateTimeStart;
+    private Calendar dateTimeFinal;
 
     public UUID getId() {
         return id;
@@ -76,6 +74,47 @@ public class Bill {
         this.salableItems = salableItems;
     }
 
+    public Map<UUID, Integer> getSalableQuantityMap() {
+        Map<UUID, Integer> map = new HashMap<>();
+
+        for (SalableItem salableItem : getSalableItems()) {
+
+            UUID uuid     = salableItem.getId();
+            int  quantity = 1;
+            if (map.containsKey(uuid)) quantity = map.get(uuid) + 1;
+
+            map.put(uuid, quantity);
+
+        }
+
+        return map;
+    }
+
+    public Map<UUID, SalableItem> getSalableItemMap() {
+        Map<UUID, SalableItem> map = new HashMap<>();
+
+        for (SalableItem salableItem : getSalableItems()) {
+
+            UUID uuid = salableItem.getId();
+            map.put(uuid, salableItem);
+
+        }
+
+        return map;
+    }
+
+    public void calculateConsumption() {
+        double total_consumption = 0;
+
+        for (Map.Entry<UUID, Integer> entry : this.getSalableQuantityMap().entrySet()) {
+
+            SalableItem salableItem = this.getSalableItemMap().get(entry.getKey());
+
+            total_consumption += salableItem.getPrice() * entry.getValue();
+        }
+        setConsumption(total_consumption);
+    }
+
     public Set<Bill_User> getBill_users() {
         if (bill_users == null) {
             this.setBill_users(new HashSet<>());
@@ -106,11 +145,31 @@ public class Bill {
         this.consumption = consumption;
     }
 
-    public Calendar getDatetimeBilling() {
-        return datetimeBilling;
+    public long getDurationInSeconds() {
+        long r = 0;
+        if (dateTimeStart != null) {
+            if (dateTimeFinal != null) {
+                r = (dateTimeFinal.getTimeInMillis() - dateTimeStart.getTimeInMillis()) / 1000;
+            } else {
+                r = (Calendar.getInstance().getTimeInMillis() - dateTimeStart.getTimeInMillis()) / 1000;
+            }
+        }
+        return r;
     }
 
-    public void setDatetimeBilling(Calendar datetimeBilling) {
-        this.datetimeBilling = datetimeBilling;
+    public Calendar getDateTimeStart() {
+        return dateTimeStart;
+    }
+
+    public void setDateTimeStart(Calendar dateTimeStart) {
+        this.dateTimeStart = dateTimeStart;
+    }
+
+    public Calendar getDateTimeFinal() {
+        return dateTimeFinal;
+    }
+
+    public void setDateTimeFinal(Calendar dateTimeFinal) {
+        this.dateTimeFinal = dateTimeFinal;
     }
 }

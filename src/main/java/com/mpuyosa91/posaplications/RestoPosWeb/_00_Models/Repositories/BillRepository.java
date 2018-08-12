@@ -11,10 +11,13 @@ import java.util.UUID;
 
 public interface BillRepository extends CrudRepository<Bill, UUID> {
 
+    @Query("select count(bill) from Bill bill where bill.site.id = :site_id")
+    int countBillsOfSite(@Param("site_id") UUID site_id);
+
     @Query("select bill from Bill bill where " +
             "bill.site.id = :site_id and " +
-            "bill.datetimeBilling > :start_time and bill.datetimeBilling < :end_time")
-    List<Bill> findBillsOfSite(
+            "bill.dateTimeStart > :start_time and bill.dateTimeFinal < :end_time")
+    List<Bill> findBillsOfSiteInRange(
             @Param("site_id") UUID site_id,
             @Param("start_time") Calendar start_time,
             @Param("end_time") Calendar end_time

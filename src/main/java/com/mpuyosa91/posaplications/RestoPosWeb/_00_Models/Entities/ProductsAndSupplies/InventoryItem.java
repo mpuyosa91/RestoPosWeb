@@ -159,6 +159,6 @@ public class InventoryItem {
     enum MeasureType {Weight, Volume, Units}
 
 
-    enum Type {RawFood, Mixture, Product, MenuPlate}
+    public enum Type {RawFood, Mixture, Product, MenuPlate}
 
 }

@@ -32,7 +32,8 @@ public class Site {
     @OneToMany(
             mappedBy = "site",
             cascade = CascadeType.ALL)
-    private Set<Customer> customers = new HashSet<>();
+    private Set<Customer> customers     = new HashSet<>();
+    private int           commandNumber = 1;
 
     public UUID getId() {
         return id;
@@ -88,5 +89,13 @@ public class Site {
 
     public void setCustomers(Set<Customer> customers) {
         this.customers = customers;
+    }
+
+    public int getCommandNumber() {
+        return commandNumber;
+    }
+
+    public void setCommandNumber(int commandNumber) {
+        this.commandNumber = commandNumber;
     }
 }

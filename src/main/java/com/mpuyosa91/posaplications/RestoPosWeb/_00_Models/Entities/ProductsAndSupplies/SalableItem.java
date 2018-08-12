@@ -3,6 +3,7 @@ package com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAnd
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Accounting.Bill;
+import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Crew.User;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Customers.Customer;
 
 import javax.persistence.*;
@@ -25,6 +26,10 @@ public class SalableItem {
     @ManyToOne
     @JoinColumn(name = "customer_id")
     private Customer customer;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @ManyToOne
     @JoinColumn(name = "inventoryitem_id")
@@ -68,6 +73,14 @@ public class SalableItem {
 
     public void setCustomer(Customer customer) {
         this.customer = customer;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public InventoryItem getInventoryItem() {

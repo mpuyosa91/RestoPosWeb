@@ -16,6 +16,12 @@ public class CustomerTable_Link {
 
     private CustomerTable_Link_Id pk;
 
+    public CustomerTable_Link(CustomerTable master, CustomerTable linked) {
+        this.pk = new CustomerTable_Link_Id();
+        this.pk.setMasterCustomerTable(master);
+        this.pk.setLinkedCustomerTable(linked);
+    }
+
     @EmbeddedId
     public CustomerTable_Link_Id getPk() {
         return pk;

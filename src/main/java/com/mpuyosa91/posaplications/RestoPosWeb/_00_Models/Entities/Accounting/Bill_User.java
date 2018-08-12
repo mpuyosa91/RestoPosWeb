@@ -19,6 +19,13 @@ public class Bill_User {
     private Bill_User_Id pk;
     private Site         site;
 
+    public Bill_User(Site site, User user, Bill bill) {
+        this.pk = new Bill_User_Id();
+        this.pk.setUser(user);
+        this.pk.setBill(bill);
+        this.site = site;
+    }
+
     @EmbeddedId
     public Bill_User_Id getPk() {
         return pk;

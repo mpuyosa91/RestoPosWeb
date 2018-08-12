@@ -1,5 +1,7 @@
 package com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Customers;
 
+import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Accounting.Bill;
+import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Crew.User;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.InventoryItem;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.SalableItem;
 
@@ -15,7 +17,7 @@ public interface ICustomer {
 
     boolean isOccupied();
 
-    SalableItem addItem(InventoryItem salableItem, String notes);
+    SalableItem addItem(User user, InventoryItem salableItem, String notes);
 
     void billAllItems();
 
@@ -29,7 +31,7 @@ public interface ICustomer {
 
     int getOrderNum();
 
-    double evacuate();
+    Bill evacuate();
 
     Calendar getDateTimeFinal();
 

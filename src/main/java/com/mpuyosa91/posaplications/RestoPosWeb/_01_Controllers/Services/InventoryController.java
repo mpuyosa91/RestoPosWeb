@@ -21,7 +21,7 @@ public class InventoryController {
         this.inventoryRepository = inventoryRepository;
     }
 
-    @GetMapping(path = "/add")
+    @PostMapping(path = "/add")
     public @ResponseBody
     String create(@RequestParam String name) {
         InventoryItem inventory = new InventoryItem();
@@ -30,6 +30,12 @@ public class InventoryController {
         inventoryRepository.save(inventory);
 
         return "saved";
+    }
+
+    @GetMapping(path = "/{id}")
+    public @ResponseBody
+    InventoryItem read(@PathVariable("id") UUID id) {
+        return inventoryRepository.findById(id).get();
     }
 
     @GetMapping(path = "/all")
