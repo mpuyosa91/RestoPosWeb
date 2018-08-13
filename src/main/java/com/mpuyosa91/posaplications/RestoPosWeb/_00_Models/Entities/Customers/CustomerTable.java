@@ -23,6 +23,10 @@ public class CustomerTable extends Customer {
     private CustomerTable           masterLinker;
     private boolean                 linked;
 
+    public CustomerTable() {
+
+    }
+
     public CustomerTable(int position_row, int position_col) {
         super();
         this.position_row = position_row;
@@ -102,6 +106,14 @@ public class CustomerTable extends Customer {
         this.linkedCustomerTables = linkedCustomerTables;
     }
 
+    public final String getIdentifier() {
+        return (CustomerTypes.Table.getShowableName() + " " + String.valueOf(this.position_col) + String.valueOf(this.position_row));
+    }
+
+    public boolean isOccupied() {
+        return getPreConsumption() != 0.0 || isLinked();
+    }
+
     public String toString() {
         StringBuilder r;
         r = new StringBuilder("\n" + getIdentifier() + ":");
@@ -124,14 +136,6 @@ public class CustomerTable extends Customer {
             r.append(", $").append(item.getPrice() * quantity);
         }
         return r.toString();
-    }
-
-    public final String getIdentifier() {
-        return (CustomerTypes.Table.getShowableName() + " " + String.valueOf(this.position_col) + String.valueOf(this.position_row));
-    }
-
-    public boolean isOccupied() {
-        return getPreConsumption() != 0.0 || isLinked();
     }
 
 }

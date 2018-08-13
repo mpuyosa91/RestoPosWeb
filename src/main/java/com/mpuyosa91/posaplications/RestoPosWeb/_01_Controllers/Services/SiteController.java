@@ -11,7 +11,6 @@ import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.SiteRepo
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -98,21 +97,19 @@ public class SiteController {
                             customer,
                             CustomerTable.class);
 
-            if (customerTable != null) {
-                Map<String, String> addCustomerTableJson = new HashMap<>();
-                addCustomerTableJson.put("site", site.getId().toString());
-                addCustomerTableJson.put("customer", customerTable.getId().toString());
+            Map<String, String> addCustomerTableJson = new HashMap<>();
+            addCustomerTableJson.put("site", site.getId().toString());
+            addCustomerTableJson.put("customer", customerTable != null ? customerTable.getId().toString() : null);
 
-                ResponseEntity responseEntity = restTemplate
-                        .postForEntity(
-                                "http://localhost:" + server_port + "/customer/add_to_site",
-                                addCustomerTableJson,
-                                ResponseEntity.class);
+            // TODO: Agregar validacion que no hayan dos mesas en una misma posicion, por ejemplo, ingresando solo
+            // columna y agregando automaticamente la fila.
 
-                if (responseEntity.getStatusCode() == HttpStatus.ACCEPTED) {
-                    return ResponseEntity.accepted().build();
-                }
-            }
+            restTemplate.put(
+                    "http://localhost:" + server_port + "/customer/add_to_site",
+                    addCustomerTableJson,
+                    ResponseEntity.class);
+
+            return ResponseEntity.accepted().build();
         }
 
         return ResponseEntity.badRequest().build();

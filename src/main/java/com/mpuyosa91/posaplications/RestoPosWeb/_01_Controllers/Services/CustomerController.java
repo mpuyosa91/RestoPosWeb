@@ -129,6 +129,7 @@ public class CustomerController {
         if (canEnable) {
             Customer customer = customerRepository.findById(json.get("customer")).get();
             customer.setEnabled(true);
+            customerRepository.save(customer);
         }
 
         return (canEnable) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
@@ -143,6 +144,7 @@ public class CustomerController {
         if (canDisable) {
             Customer customer = customerRepository.findById(json.get("customer")).get();
             customer.setEnabled(false);
+            customerRepository.save(customer);
         }
 
         return (canDisable) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
