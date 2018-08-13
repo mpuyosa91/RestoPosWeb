@@ -141,4 +141,21 @@ public class User {
 
 
     public enum Role {Owner, Administrator, Crew}
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", role=" + role +
+                ", sites=" + sites +
+                ", enabled=" + enabled +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", email='" + email + '\'' +
+                ", documentType=" + documentType +
+                ", documentNumber=" + documentNumber +
+                '}';
+    }
 }

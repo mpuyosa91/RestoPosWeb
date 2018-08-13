@@ -1,5 +1,6 @@
 package com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Customers;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Accounting.Bill;
@@ -36,8 +37,10 @@ public class Customer implements ICustomer {
     @GeneratedValue(generator = "uuid")
     @Column(columnDefinition = "BINARY(16)")
     private UUID    id;
+
     @ManyToOne
     @JoinColumn(name = "site_id")
+    @JsonBackReference
     private Site    site;
     private boolean enabled = true;
 

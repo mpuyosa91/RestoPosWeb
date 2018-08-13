@@ -8,9 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,13 +29,10 @@ public class UserController {
     }
 
     @PostMapping(path = "/")
-    public ResponseEntity<Object> create(@RequestBody User user) {
+    public @ResponseBody
+    UUID create(@RequestBody User user) {
         User savedUser = userRepository.save(user);
-        URI location = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(savedUser.getId()).toUri();
-        return ResponseEntity.created(location).build();
+        return savedUser.getId();
     }
 
     @GetMapping(path = "/{id}")
@@ -82,18 +77,7 @@ public class UserController {
         return responseEntity;
     }
 
-    @DeleteMapping(path = "/{id}")
-    public ResponseEntity delete(@PathVariable UUID id) {
-        try {
-            userRepository.deleteById(id);
-            return ResponseEntity.accepted().build();
-        } catch (IllegalArgumentException ignored) {
-            return ResponseEntity.badRequest().build();
-        }
-
-    }
-
-    @PostMapping(path = "/enable")
+    @PutMapping(path = "/enable")
     public ResponseEntity<Object> enable(@RequestBody Map<String, UUID> json) {
 
         boolean canEnable = json.get("user") != null && userRepository.findById(json.get("user")).isPresent();
@@ -101,12 +85,13 @@ public class UserController {
         if (canEnable) {
             User user = userRepository.findById(json.get("user")).get();
             user.setEnabled(true);
+            userRepository.save(user);
         }
 
         return (canEnable) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
     }
 
-    @PostMapping(path = "/disable")
+    @PutMapping(path = "/disable")
     public ResponseEntity<Object> disable(@RequestBody Map<String, UUID> json) {
 
         boolean canDisable = json.get("user") != null && userRepository.findById(json.get("user")).isPresent();
@@ -114,6 +99,7 @@ public class UserController {
         if (canDisable) {
             User user = userRepository.findById(json.get("user")).get();
             user.setEnabled(false);
+            userRepository.save(user);
         }
 
         return (canDisable) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
@@ -131,6 +117,17 @@ public class UserController {
         return (unlink_site_user(json, userRepository, siteRepository)) ?
                 ResponseEntity.accepted().build() :
                 ResponseEntity.notFound().build();
+    }
+
+    @DeleteMapping(path = "/{id}")
+    public ResponseEntity delete(@PathVariable UUID id) {
+        try {
+            userRepository.deleteById(id);
+            return ResponseEntity.accepted().build();
+        } catch (IllegalArgumentException ignored) {
+            return ResponseEntity.badRequest().build();
+        }
+
     }
 
 }

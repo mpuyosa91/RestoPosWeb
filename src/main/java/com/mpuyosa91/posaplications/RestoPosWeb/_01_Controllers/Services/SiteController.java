@@ -44,7 +44,7 @@ public class SiteController {
 
     @PostMapping(path = "/")
     public @ResponseBody
-    Site create(@RequestBody Site site) {
+    UUID create(@RequestBody Site site) {
 
         String server_port = environment.getProperty("local.server.port");
 
@@ -80,7 +80,7 @@ public class SiteController {
                 addExternalCustomerJson,
                 ExternalCustomer.class);
 
-        return siteRepository.save(savedSite);
+        return siteRepository.save(savedSite).getId();
     }
 
     @PostMapping(path = "/createTable/{site_id}")
