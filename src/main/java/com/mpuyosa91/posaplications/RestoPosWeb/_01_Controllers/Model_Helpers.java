@@ -3,6 +3,7 @@ package com.mpuyosa91.posaplications.RestoPosWeb._01_Controllers;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Crew.User;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Customers.Customer;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Customers.CustomerTable;
+import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.InventoryItem;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Site;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.CustomerRepository;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.InventoryRepository;
@@ -118,6 +119,25 @@ public class Model_Helpers {
         return canRemove;
     }
 
+    public static boolean link_site_inventoryitem(@RequestBody Map<String, UUID> json,
+                                                  SiteRepository siteRepository,
+                                                  InventoryRepository inventoryRepository) {
+        boolean canLink = json.get("site") != null && json.get("item") != null &&
+                siteRepository.findById(json.get("site")).isPresent() &&
+                inventoryRepository.findById(json.get("item")).isPresent();
+
+        if (canLink) {
+            Site          site          = siteRepository.findById(json.get("site")).get();
+            InventoryItem inventoryItem = inventoryRepository.findById(json.get("item")).get();
+
+            inventoryItem.setSite(site);
+
+            siteRepository.save(site);
+            inventoryRepository.save(inventoryItem);
+        }
+        return canLink;
+    }
+
     public static boolean add_inventoryitem_to_customer(@RequestBody Map<String, UUID> json,
                                                         CustomerRepository customerRepository,
                                                         InventoryRepository inventoryRepository) {
@@ -128,5 +148,24 @@ public class Model_Helpers {
                                                              CustomerRepository customerRepository,
                                                              InventoryRepository inventoryRepository) {
         return true;
+    }
+
+    public static boolean unlink_site_inventoryitem(@RequestBody Map<String, UUID> json,
+                                                    SiteRepository siteRepository,
+                                                    InventoryRepository inventoryRepository) {
+        boolean canUnlink = json.get("site") != null && json.get("item") != null &&
+                siteRepository.findById(json.get("site")).isPresent() &&
+                inventoryRepository.findById(json.get("item")).isPresent();
+
+        if (canUnlink) {
+            Site          site          = siteRepository.findById(json.get("site")).get();
+            InventoryItem inventoryItem = inventoryRepository.findById(json.get("item")).get();
+
+            inventoryItem.setSite(null);
+
+            siteRepository.save(site);
+            inventoryRepository.save(inventoryItem);
+        }
+        return canUnlink;
     }
 }

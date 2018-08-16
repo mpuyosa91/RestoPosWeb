@@ -1,5 +1,6 @@
 package com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Site;
@@ -11,16 +12,23 @@ import java.util.UUID;
 
 @Entity
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
+@Table(
+        indexes = {@Index(name = "inventory_item_serial_site_idx", columnList = "serial,site_id")},
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"serial", "site_id"})}
+)
 public class InventoryItem {
 
     @Id
     @GeneratedValue(generator = "uuid")
     @Column(columnDefinition = "BINARY(16)")
     private UUID    id;
+
+    @JoinColumn(name = "serial")
     private Integer serial;
 
     @ManyToOne
     @JoinColumn(name = "site_id")
+    @JsonBackReference
     private Site    site;
     private boolean enabled = true;
 
@@ -28,8 +36,8 @@ public class InventoryItem {
     private Set<InventoryItem_Ingredients> ingredients = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
-    private Type    type = Type.RawFood;
-    private boolean is_final;
+    private Type    type       = Type.RawFood;
+    private boolean final_item = true;
     private String  name;
     private double  price;
 
@@ -76,6 +84,26 @@ public class InventoryItem {
     }
 
     public void setSerial(Integer serial) {
+
+        if (serial != null) {
+            int firstDigit = Integer.parseInt(Integer.toString(serial).substring(0, 1));
+            switch (firstDigit) {
+                case 1:
+                    setType(Type.RawFood);
+                    break;
+                case 2:
+                    setType(Type.Mixture);
+                    break;
+                case 3:
+                    setType(Type.Product);
+                    break;
+                case 4:
+                    setType(Type.MenuPlate);
+                    break;
+                default:
+                    setType(Type.RawFood);
+            }
+        }
         this.serial = serial;
     }
 
@@ -84,15 +112,35 @@ public class InventoryItem {
     }
 
     public void setType(Type type) {
+        if (type != null && serial != null) {
+            String fistDigit = "9";
+            switch (type) {
+                case RawFood:
+                    fistDigit = "1";
+                    break;
+                case Mixture:
+                    fistDigit = "2";
+                    break;
+                case Product:
+                    fistDigit = "3";
+                    break;
+                case MenuPlate:
+                    fistDigit = "4";
+                    break;
+            }
+            String serial_string = Integer.toString(serial);
+            serial_string = fistDigit.concat(serial_string.substring(1));
+            setSerial(Integer.parseInt(serial_string));
+        }
         this.type = type;
     }
 
-    public boolean isIs_final() {
-        return is_final;
+    public boolean isFinal_item() {
+        return final_item;
     }
 
-    public void setIs_final(boolean is_final) {
-        this.is_final = is_final;
+    public void setFinal_item(boolean final_item) {
+        this.final_item = final_item;
     }
 
     public String getName() {
@@ -161,4 +209,22 @@ public class InventoryItem {
 
     public enum Type {RawFood, Mixture, Product, MenuPlate}
 
+    @Override
+    public String toString() {
+        return "InventoryItem{" +
+                "id=" + id +
+                ", serial=" + serial +
+                ", site=" + site +
+                ", enabled=" + enabled +
+                ", ingredients=" + ingredients +
+                ", type=" + type +
+                ", final_item=" + final_item +
+                ", name='" + name + '\'' +
+                ", price=" + price +
+                ", measureType=" + measureType +
+                ", volume=" + volume +
+                ", weight=" + weight +
+                ", units=" + units +
+                '}';
+    }
 }
