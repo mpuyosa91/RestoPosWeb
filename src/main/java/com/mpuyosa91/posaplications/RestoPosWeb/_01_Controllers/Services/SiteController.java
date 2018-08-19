@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -213,6 +214,46 @@ public class SiteController {
         return ResponseEntity.badRequest().build();
     }
 
+    @PostMapping(path = "/createUser/{site_id}")
+    public ResponseEntity createUser(@PathVariable UUID site_id, @RequestBody User bodyUser) {
+
+        String server_port = environment.getProperty("local.server.port");
+        boolean canCreate = siteRepository.findById(site_id).isPresent() &&
+                bodyUser.getFirstName() != null &&
+                bodyUser.getLastName() != null;
+
+        if (canCreate) {
+
+            Site site = siteRepository.findById(site_id).get();
+
+            RestTemplate restTemplate = new RestTemplate();
+
+            if (bodyUser.getUsername() == null) {
+                String username = bodyUser.getFirstName().substring(0, 1).toLowerCase();
+                username = username.concat(bodyUser.getLastName().toLowerCase());
+                bodyUser.setUsername(username);
+            }
+
+            UUID user_id = restTemplate.postForObject(
+                    "http://localhost:" + server_port + "/user/",
+                    bodyUser,
+                    UUID.class);
+
+            Map<String, String> addCustomerTableJson = new HashMap<>();
+            addCustomerTableJson.put("site", site.getId().toString());
+            addCustomerTableJson.put("user", user_id.toString());
+
+            restTemplate.put(
+                    "http://localhost:" + server_port + "/user/add_to_site",
+                    addCustomerTableJson,
+                    ResponseEntity.class);
+
+            return ResponseEntity.accepted().build();
+        }
+
+        return ResponseEntity.badRequest().build();
+    }
+
     @GetMapping(path = "/{id}")
     public @ResponseBody
     Site read(@PathVariable UUID id) {
@@ -223,6 +264,29 @@ public class SiteController {
     public @ResponseBody
     Iterable<User> readAllUsersOfSite(@PathVariable UUID id) {
         return userRepository.getAllOfSite(id);
+    }
+
+    @GetMapping(path = "/{site_id}/search-by-username/{username}")
+    public @ResponseBody
+    User searchUserByUsername(@PathVariable UUID site_id, @PathVariable String username) {
+
+        boolean canSearch = username != null;
+        User    user      = null;
+
+        if (canSearch) {
+
+            List<User> userList = userRepository.getAllOfSite(site_id);
+
+            for (User user_item : userList) {
+                if (user_item.getUsername().equals(username)) {
+                    user = user_item;
+                    break;
+                }
+            }
+
+        }
+
+        return user;
     }
 
     @GetMapping(path = "/allCustomers/{id}")

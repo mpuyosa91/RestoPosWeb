@@ -103,8 +103,15 @@ public class GeneralController {
         return null;
     }
 
-    public static User getUser(String user) {
-        return null;
+    public static User getUser(String username) {
+        String host = localSettings.getProperty("host");
+        String port = localSettings.getProperty("port");
+
+        return restTemplate.getForObject(
+                "http://" + host + ":" + port + "/site/" + site.getId().toString() +
+                        "/search-by-username/" + username,
+                User.class
+        );
     }
 
     public enum Label {
