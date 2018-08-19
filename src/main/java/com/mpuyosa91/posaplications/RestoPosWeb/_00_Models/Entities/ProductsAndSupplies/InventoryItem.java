@@ -33,7 +33,7 @@ public class InventoryItem {
     private boolean enabled = true;
 
     @OneToMany(mappedBy = "pk.inventoryItem", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<InventoryItem_Ingredients> ingredients = new HashSet<>();
+    private Set<InventoryItem_Ingredients> composition = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     private Type    type       = Type.RawFood;
@@ -71,12 +71,12 @@ public class InventoryItem {
         this.enabled = enabled;
     }
 
-    public Set<InventoryItem_Ingredients> getIngredients() {
-        return ingredients;
+    public Set<InventoryItem_Ingredients> getComposition() {
+        return composition;
     }
 
-    public void setIngredients(Set<InventoryItem_Ingredients> ingredients) {
-        this.ingredients = ingredients;
+    public void setComposition(Set<InventoryItem_Ingredients> composition) {
+        this.composition = composition;
     }
 
     public Integer getSerial() {
@@ -216,7 +216,7 @@ public class InventoryItem {
                 ", serial=" + serial +
                 ", site=" + site +
                 ", enabled=" + enabled +
-                ", ingredients=" + ingredients +
+                ", composition=" + composition +
                 ", type=" + type +
                 ", final_item=" + final_item +
                 ", name='" + name + '\'' +

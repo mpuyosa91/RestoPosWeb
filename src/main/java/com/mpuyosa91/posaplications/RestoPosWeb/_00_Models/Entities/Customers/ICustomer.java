@@ -2,7 +2,6 @@ package com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Customers;
 
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Accounting.Bill;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Crew.User;
-import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.InventoryItem;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.SalableItem;
 
 import java.util.Calendar;
@@ -17,7 +16,7 @@ public interface ICustomer {
 
     boolean isOccupied();
 
-    SalableItem addItem(User user, InventoryItem salableItem, String notes);
+    SalableItem addItem(User user, SalableItem salableItem);
 
     void billAllItems();
 
@@ -43,10 +42,12 @@ public interface ICustomer {
 
     double getPreConsumption();
 
+    CustomerTypes getType();
+
     enum CustomerTypes {
         GenericCustomer("Cliente Generico"),
         Table("Mesa "),
-        PointOfService("Compra por Taquilla"),
+        PointOfService("Compra En Caja"),
         ExternalCustomer("Cliente Externo");
 
         private final String showableName;

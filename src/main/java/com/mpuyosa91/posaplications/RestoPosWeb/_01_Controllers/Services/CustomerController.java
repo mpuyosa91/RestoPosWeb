@@ -181,10 +181,12 @@ public class CustomerController {
             if (canAdd) {
 
                 Customer customer = customerRepository.findById(id).get();
-                SalableItem salableItem = customer.addItem(
-                        userRepository.findById(user_id).get(),
+                SalableItem salableItem = new SalableItem(
                         inventoryRepository.findById(inventoryItem_id).get(),
                         json.get("notes"));
+                customer.addItem(
+                        userRepository.findById(user_id).get(),
+                        salableItem);
 
                 customerRepository.save(customer);
                 salableItemRepository.save(salableItem);

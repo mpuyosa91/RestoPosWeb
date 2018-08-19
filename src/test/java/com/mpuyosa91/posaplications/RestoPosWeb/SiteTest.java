@@ -32,32 +32,31 @@ public class SiteTest {
     public void createSiteReadSiteDeleteSite() {
 
         Site site = new Site();
-        site.setName("ThePanera");
+        site.setTradeName("ThePanera");
         site.setNit("NIT: 15.444.730-9");
 
-        site = restTemplate.exchange(
+        UUID site_id = restTemplate.exchange(
                 createURLWithPort("/site/"),
                 HttpMethod.POST,
                 new HttpEntity<>(site, headers),
-                Site.class
+                UUID.class
         ).getBody();
 
-        assert site != null;
-        UUID site_id = site.getId();
+        assert site_id != null;
 
         User user = new User();
         user.setFirstName("Moises Eduardo");
         user.setRole(User.Role.Owner);
 
-        user = restTemplate.exchange(
+        UUID user_id = restTemplate.exchange(
                 createURLWithPort("/user/"),
                 HttpMethod.POST,
                 new HttpEntity<>(user, headers),
-                User.class
+                UUID.class
         ).getBody();
 
-        assert user != null;
-        UUID user_id = user.getId();
+        assert user_id != null;
+
 
         Map<String, UUID> user_site_json = new HashMap<>();
         user_site_json.put("user", user_id);
@@ -86,8 +85,6 @@ public class SiteTest {
 
         assertThat(site.getUsers().iterator().next().getId()).isEqualTo(user_id);
         assertThat(user.getSites().iterator().next().getId()).isEqualTo(site_id);
-
-
 
     }
 

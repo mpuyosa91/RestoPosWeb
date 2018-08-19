@@ -12,15 +12,20 @@ public class PointOfService extends Customer {
 
     public PointOfService() {
         super();
+        type = CustomerTypes.PointOfService;
         identifier = CustomerTypes.PointOfService.getShowableName();
+        position_col = 0;
+        position_row = 0;
     }
 
     @Override
     public String toString() {
         return "PointOfService{" +
-                "itemListBilled=" + itemListBilled +
+                "position_row=" + position_row +
+                ", position_col=" + position_col +
+                ", itemListBilled=" + itemListBilled +
                 ", itemListUnBilled=" + itemListUnBilled +
                 ", identifier='" + identifier + '\'' +
-                "} " + super.toString();
+                '}';
     }
 }

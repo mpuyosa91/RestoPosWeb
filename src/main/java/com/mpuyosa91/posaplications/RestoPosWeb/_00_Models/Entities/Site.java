@@ -18,9 +18,10 @@ public class Site {
     @GeneratedValue(generator = "uuid")
     @Column(name = "id", columnDefinition = "BINARY(16)")
     private UUID    id;
-    private String  name;
+    private String  tradeName;
     private String  billing_name;
     private String  nit;
+    private String  legalAddress;
     private boolean enabled = true;
 
     @ManyToMany(
@@ -43,12 +44,12 @@ public class Site {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public String getTradeName() {
+        return tradeName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setTradeName(String tradeName) {
+        this.tradeName = tradeName;
     }
 
     public String getBilling_name() {
@@ -65,6 +66,14 @@ public class Site {
 
     public void setNit(String nit) {
         this.nit = nit;
+    }
+
+    public String getLegalAddress() {
+        return legalAddress;
+    }
+
+    public void setLegalAddress(String legalAddress) {
+        this.legalAddress = legalAddress;
     }
 
     public boolean isEnabled() {
@@ -103,7 +112,7 @@ public class Site {
     public String toString() {
         return "Site{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
+                ", tradeName='" + tradeName + '\'' +
                 ", billing_name='" + billing_name + '\'' +
                 ", nit='" + nit + '\'' +
                 ", enabled=" + enabled +

@@ -11,6 +11,7 @@ import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.Customer
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.InventoryRepository;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.SiteRepository;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.UserRepository;
+import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.SettingsAndProperties.LocalSettings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.*;
@@ -171,6 +172,10 @@ public class SiteController {
                 "http://localhost:" + server_port + "/inventory_item/add_to_site",
                 addMenuPlateJson,
                 InventoryItem.class);
+
+        LocalSettings localSettings = new LocalSettings();
+        localSettings.setProperty("site_id", savedSite.getId().toString());
+        localSettings.setProperty("site_tradeName", savedSite.getTradeName());
 
         return siteRepository.save(savedSite).getId();
     }

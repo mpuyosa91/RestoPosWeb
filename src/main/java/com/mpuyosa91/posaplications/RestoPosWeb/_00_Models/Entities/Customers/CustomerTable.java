@@ -13,9 +13,6 @@ import java.util.Set;
 @DiscriminatorValue("Table")
 public class CustomerTable extends Customer {
 
-    private Integer position_row;
-    private Integer position_col;
-
     @OneToMany(mappedBy = "pk.masterCustomerTable", cascade = CascadeType.ALL)
     private Set<CustomerTable_Link> linkedCustomerTables;
     @ManyToOne
@@ -24,15 +21,16 @@ public class CustomerTable extends Customer {
     private boolean                 linked;
 
     public CustomerTable() {
-
+        this.type = CustomerTypes.Table;
     }
 
     public CustomerTable(int position_row, int position_col) {
         super();
         this.position_row = position_row;
         this.position_col = position_col;
-        linkedCustomerTables = new HashSet<>();
+        this.linkedCustomerTables = new HashSet<>();
         this.linked = false;
+        this.type = CustomerTypes.Table;
         identifier = CustomerTypes.Table.getShowableName() + " " +
                 String.valueOf(this.position_col) +
                 String.valueOf(this.position_row);
@@ -82,32 +80,12 @@ public class CustomerTable extends Customer {
         this.linked = linked;
     }
 
-    public Integer getPosition_row() {
-        return position_row;
-    }
-
-    public void setPosition_row(Integer position_row) {
-        this.position_row = position_row;
-    }
-
-    public Integer getPosition_col() {
-        return position_col;
-    }
-
-    public void setPosition_col(Integer position_col) {
-        this.position_col = position_col;
-    }
-
     public Set<CustomerTable_Link> getLinkedCustomerTables() {
         return linkedCustomerTables;
     }
 
     public void setLinkedCustomerTables(Set<CustomerTable_Link> linkedCustomerTables) {
         this.linkedCustomerTables = linkedCustomerTables;
-    }
-
-    public final String getIdentifier() {
-        return (CustomerTypes.Table.getShowableName() + " " + String.valueOf(this.position_col) + String.valueOf(this.position_row));
     }
 
     public boolean isOccupied() {

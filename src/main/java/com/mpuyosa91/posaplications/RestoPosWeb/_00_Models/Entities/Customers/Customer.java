@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Accounting.Bill;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Crew.User;
-import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.InventoryItem;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.SalableItem;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Site;
 import org.hibernate.annotations.Where;
@@ -24,31 +23,33 @@ import java.util.UUID;
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Customer implements ICustomer {
 
+    Integer position_row;
+    Integer position_col;
+
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
     @Where(clause = "delivered=false and billed=true")
     Set<SalableItem> itemListBilled;
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
     @Where(clause = "delivered=false and billed=false")
     Set<SalableItem> itemListUnBilled;
-    String identifier = ICustomer.CustomerTypes.GenericCustomer.getShowableName();
+    String        identifier = ICustomer.CustomerTypes.GenericCustomer.getShowableName();
+    CustomerTypes type       = CustomerTypes.GenericCustomer;
     @Value("${server.port}")
     private Integer server_port;
     @Id
     @GeneratedValue(generator = "uuid")
     @Column(columnDefinition = "BINARY(16)")
     private UUID    id;
-
     @ManyToOne
     @JoinColumn(name = "site_id")
     @JsonBackReference
     private Site    site;
-    private boolean enabled = true;
-
+    private boolean enabled  = true;
     @OneToOne
     @JoinColumn(name = "current_bill_id")
-    private Bill   currentBill;
-    private double consumption;
-    private int    orderNum = 1;
+    private Bill    currentBill;
+    private double  consumption;
+    private int     orderNum = 1;
 
     Customer() {
         consumption = calculateConsumption();
@@ -75,7 +76,7 @@ public class Customer implements ICustomer {
         return getPreConsumption() != 0.0 || currentBill != null;
     }
 
-    public SalableItem addItem(User user, InventoryItem inventoryItem, String notes) {
+    public SalableItem addItem(User user, SalableItem salableItem) {
 
         if (this.getCurrentBill() == null) {
 
@@ -95,8 +96,6 @@ public class Customer implements ICustomer {
 
         }
 
-        SalableItem salableItem = new SalableItem(inventoryItem, notes);
-        salableItem.setUser(user);
         itemListUnBilled.add(salableItem);
         return salableItem;
 
@@ -204,6 +203,10 @@ public class Customer implements ICustomer {
         return r;
     }
 
+    public CustomerTypes getType() {
+        return type;
+    }
+
     public void setItemListBilled(Set<SalableItem> itemListBilled) {
         this.itemListBilled = itemListBilled;
     }
@@ -237,17 +240,12 @@ public class Customer implements ICustomer {
         this.enabled = enabled;
     }
 
-    private double calculateConsumption() {
-        double r = 0;
-        if (getCurrentBill() != null)
-            r = getCurrentBill().calculateConsumption();
-        return r;
-    }
-
     @Override
     public String toString() {
         return "Customer{" +
-                "itemListBilled=" + itemListBilled +
+                "position_row=" + position_row +
+                ", position_col=" + position_col +
+                ", itemListBilled=" + itemListBilled +
                 ", itemListUnBilled=" + itemListUnBilled +
                 ", identifier='" + identifier + '\'' +
                 ", server_port=" + server_port +
@@ -258,5 +256,28 @@ public class Customer implements ICustomer {
                 ", consumption=" + consumption +
                 ", orderNum=" + orderNum +
                 '}';
+    }
+
+    public Integer getPosition_row() {
+        return position_row;
+    }
+
+    public void setPosition_row(Integer position_row) {
+        this.position_row = position_row;
+    }
+
+    public Integer getPosition_col() {
+        return position_col;
+    }
+
+    public void setPosition_col(Integer position_col) {
+        this.position_col = position_col;
+    }
+
+    private double calculateConsumption() {
+        double r = 0;
+        if (getCurrentBill() != null)
+            r = getCurrentBill().calculateConsumption();
+        return r;
     }
 }
