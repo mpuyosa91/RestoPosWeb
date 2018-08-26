@@ -33,15 +33,15 @@ public class AgregarProductoADeLaCarta extends MiniWindowDialog {
     private ArrayList<JLabel>  labelList;
     private ArrayList<JButton> buttonList;
 
-    public AgregarProductoADeLaCarta(MainFrame contextFrame, javax.swing.JFrame frame, boolean modal) {
+    public AgregarProductoADeLaCarta(MainFrame contextFrame, javax.swing.JFrame frame, boolean modal, SalableItem dto) {
         super(contextFrame, frame, modal);
+        this.dto = dto;
         createObjects();
         createPanels();
         this.btnExit.setVisible(false);
     }
 
-    public void startFrame(SalableItem dto) {
-        this.dto = dto;
+    public void startFrame() {
         informationLabel.setText(dto.getName());
         //setDeLaCartaListLabelAndButtons();
         setVisible(true);
@@ -144,7 +144,7 @@ public class AgregarProductoADeLaCarta extends MiniWindowDialog {
                 buttonList.add(button);
                 mainPanel.add(button);
 
-                JLabel label = new JLabel("<" + compositionDTO.getId() + "> " + compositionDTO.getName());
+                JLabel label = new JLabel("<" + compositionDTO.getSerial() + "> " + compositionDTO.getName());
                 label.setBounds(x + w2, y, w, h);
                 labelList.add(label);
                 mainPanel.add(label);

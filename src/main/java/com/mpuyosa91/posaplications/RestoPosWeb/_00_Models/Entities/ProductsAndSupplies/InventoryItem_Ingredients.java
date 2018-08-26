@@ -18,7 +18,10 @@ public class InventoryItem_Ingredients {
     private InventoryItem.MeasureType    type;
     private Double                       quantity;
 
-    public InventoryItem_Ingredients() {
+    public InventoryItem_Ingredients(InventoryItem inventoryItem, InventoryItem ingredient) {
+        pk = new InventoryItem_Ingredients_Id();
+        pk.setIngredient(ingredient);
+        pk.setInventoryItem(inventoryItem);
     }
 
     @Transient

@@ -1,8 +1,9 @@
 package com.mpuyosa91.posaplications.RestoPosWeb._01_Controllers.Services;
 
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.InventoryItem;
-import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Site;
+import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.SalableItem;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.InventoryRepository;
+import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.SalableItemRepository;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.SiteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,12 +20,16 @@ import static com.mpuyosa91.posaplications.RestoPosWeb._01_Controllers.Model_Hel
 @RequestMapping(path = "/inventory_item")
 public class InventoryController {
 
-    private final InventoryRepository inventoryRepository;
-    private final SiteRepository      siteRepository;
+    private final InventoryRepository   inventoryRepository;
+    private final SalableItemRepository salableItemRepository;
+    private final SiteRepository        siteRepository;
 
     @Autowired
-    public InventoryController(InventoryRepository inventoryRepository, SiteRepository siteRepository) {
+    public InventoryController(InventoryRepository inventoryRepository,
+                               SalableItemRepository salableItemRepository,
+                               SiteRepository siteRepository) {
         this.inventoryRepository = inventoryRepository;
+        this.salableItemRepository = salableItemRepository;
         this.siteRepository = siteRepository;
     }
 
@@ -33,25 +38,6 @@ public class InventoryController {
     InventoryItem create(@RequestBody InventoryItem inventoryItem) {
         System.out.println(inventoryItem.toString());
         return inventoryRepository.save(inventoryItem);
-    }
-
-    @PostMapping(path = "/{site_id}")
-    public @ResponseBody
-    InventoryItem create(@RequestBody InventoryItem inventoryItem, @PathVariable UUID site_id) {
-
-        boolean canCreate = siteRepository.findById(site_id).isPresent() &&
-                inventoryItem.getSerial() != null && inventoryItem.getName() != null;
-
-        //TODO Buscar por site y por serial que no este creado para poder crear.
-
-        if (canCreate) {
-            Site site = siteRepository.findById(site_id).get();
-            inventoryItem.setSite(site);
-            return inventoryRepository.save(inventoryItem);
-        } else {
-            return null;
-        }
-
     }
 
     @GetMapping(path = "/{id}")
@@ -69,22 +55,39 @@ public class InventoryController {
     @GetMapping(path = "/{site_id}/{serial}/father")
     public @ResponseBody
     InventoryItem readFather(@PathVariable("site_id") UUID site_id, @PathVariable("serial") int serial) {
-        if (serial >= 10 && serial < 100)
-            return inventoryRepository.findFirstFather(site_id, serial);
-        else
-            return inventoryRepository.findFather(site_id, serial);
+
+        InventoryItem inventoryItem = inventoryRepository.findNode(site_id, serial);
+        boolean       canSearch     = inventoryItem != null && serial > 9;
+
+        if (canSearch) {
+            int divider       = serial < 100 ? 10 : 100;
+            int father_serial = serial / divider;
+            return inventoryRepository.findNode(site_id, father_serial);
+        } else return null;
+
     }
 
-    @GetMapping(path = "/{site_id}/{serial}/childs")
+    @GetMapping(path = "/{site_id}/{serial}/childes")
     public @ResponseBody
     Iterable<InventoryItem> readChilds(@PathVariable("site_id") UUID site_id, @PathVariable("serial") int serial) {
         InventoryItem inventoryItem = inventoryRepository.findNode(site_id, serial);
-        if (!inventoryItem.isFinal_item()) {
-            if (serial >= 0 && serial < 10)
-                return inventoryRepository.findFirstChilds(site_id, serial);
-            else
-                return inventoryRepository.findChilds(site_id, serial);
+        boolean       canRead       = inventoryItem != null && !inventoryItem.isFinal_item();
+        int           serial_begin  = serial;
+        int           serial_end    = serial + 1;
+        int           multiplier;
+        if (canRead) {
+            multiplier = (serial >= 0 && serial < 10) ? 10 : 100;
+            serial_begin = serial_begin * multiplier;
+            serial_end = serial_end * multiplier;
+            return inventoryRepository.findChilds(site_id, serial_begin, serial_end);
         } else return null;
+
+    }
+
+    @GetMapping(path = "/all-salable")
+    public @ResponseBody
+    Iterable<SalableItem> readAllSalableEnabled() {
+        return salableItemRepository.findAll();
     }
 
     @GetMapping(path = "/all")
@@ -97,12 +100,6 @@ public class InventoryController {
     public @ResponseBody
     Iterable<InventoryItem> readAll() {
         return inventoryRepository.findAll();
-    }
-
-    @PutMapping(path = "/")
-    public @ResponseBody
-    InventoryItem update(@RequestBody InventoryItem inventoryItem) {
-        return inventoryRepository.save(inventoryItem);
     }
 
     @PutMapping(path = "/add_to_site")
@@ -147,6 +144,24 @@ public class InventoryController {
         }
 
         return (canDisable) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
+    }
+
+    @DeleteMapping(path = "/clean_all_salable_orphan")
+    public @ResponseBody
+    ResponseEntity<Object> cleanAllSalable() {
+        salableItemRepository.deleteAll(salableItemRepository.findAllOrphan());
+        return ResponseEntity.accepted().build();
+    }
+
+    @DeleteMapping(path = "/salable/{salable_id}")
+    public @ResponseBody
+    ResponseEntity<Object> deleteSalable(@PathVariable UUID salable_id) {
+        try {
+            salableItemRepository.deleteById(salable_id);
+            return ResponseEntity.accepted().build();
+        } catch (IllegalArgumentException ignored) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @DeleteMapping(path = "/{id}")

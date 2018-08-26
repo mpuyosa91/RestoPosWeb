@@ -7,8 +7,8 @@ import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Accounting.B
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Crew.User;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.SalableItem;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Site;
+import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.SettingsAndProperties.LocalSettings;
 import org.hibernate.annotations.Where;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.client.RestTemplate;
 
 import javax.persistence.*;
@@ -34,8 +34,6 @@ public class Customer implements ICustomer {
     Set<SalableItem> itemListUnBilled;
     String        identifier = ICustomer.CustomerTypes.GenericCustomer.getShowableName();
     CustomerTypes type       = CustomerTypes.GenericCustomer;
-    @Value("${server.port}")
-    private Integer server_port;
     @Id
     @GeneratedValue(generator = "uuid")
     @Column(columnDefinition = "BINARY(16)")
@@ -45,7 +43,7 @@ public class Customer implements ICustomer {
     @JsonBackReference
     private Site    site;
     private boolean enabled  = true;
-    @OneToOne
+    @OneToOne(cascade = {CascadeType.ALL})
     @JoinColumn(name = "current_bill_id")
     private Bill    currentBill;
     private double  consumption;
@@ -73,16 +71,20 @@ public class Customer implements ICustomer {
     }
 
     public boolean isOccupied() {
-        return getPreConsumption() != 0.0 || currentBill != null;
+        return getPreConsumption() != 0.0;
     }
 
     public SalableItem addItem(User user, SalableItem salableItem) {
 
         if (this.getCurrentBill() == null) {
 
-            Integer consecutive = (new RestTemplate()).getForObject(
-                    "http://localhost:" + server_port.toString() +
-                            "/bill/consecutive/" + site.getId().toString(),
+            LocalSettings localSettings = new LocalSettings();
+            RestTemplate  restTemplate  = new RestTemplate();
+            String        host          = localSettings.getProperty("host");
+            String        port          = localSettings.getProperty("port");
+
+            Integer consecutive = restTemplate.getForObject(
+                    "http://" + host + ":" + port + "/bill/consecutive/" + site.getId(),
                     Integer.class
             );
 
@@ -96,7 +98,10 @@ public class Customer implements ICustomer {
 
         }
 
+        salableItem.setUser(user);
+        salableItem.setCustomer(this);
         itemListUnBilled.add(salableItem);
+        consumption = getPreConsumption();
         return salableItem;
 
     }
@@ -118,15 +123,20 @@ public class Customer implements ICustomer {
             itemListUnBilled = new HashSet<>();
 
         }
-        consumption = calculateConsumption();
+        consumption = getPreConsumption();
     }
 
     public boolean removeItem(SalableItem item) {
+        boolean r;
         try {
-            return itemListUnBilled.remove(item);
+            itemListUnBilled.remove(item);
+            consumption = getPreConsumption();
+            r = true;
         } catch (IndexOutOfBoundsException ignored) {
-            return false;
+            r = false;
         }
+
+        return r;
     }
 
     public Set<SalableItem> getItemListUnBilled() {
@@ -137,6 +147,7 @@ public class Customer implements ICustomer {
 
     public void setItemListUnBilled(Set<SalableItem> itemListUnBilled) {
         this.itemListUnBilled = itemListUnBilled;
+        consumption = getPreConsumption();
     }
 
     public Set<SalableItem> getItemListBilled() {
@@ -209,6 +220,7 @@ public class Customer implements ICustomer {
 
     public void setItemListBilled(Set<SalableItem> itemListBilled) {
         this.itemListBilled = itemListBilled;
+        consumption = getPreConsumption();
     }
 
     public void clean() {
@@ -245,12 +257,11 @@ public class Customer implements ICustomer {
         return "Customer{" +
                 "position_row=" + position_row +
                 ", position_col=" + position_col +
-                ", itemListBilled=" + itemListBilled +
-                ", itemListUnBilled=" + itemListUnBilled +
+                ", itemListBilled=" + itemListBilled.size() +
+                ", itemListUnBilled=" + itemListUnBilled.size() +
                 ", identifier='" + identifier + '\'' +
-                ", server_port=" + server_port +
                 ", id=" + id +
-                ", site=" + site +
+                ", site=" + site.getId() +
                 ", enabled=" + enabled +
                 ", currentBill=" + currentBill +
                 ", consumption=" + consumption +

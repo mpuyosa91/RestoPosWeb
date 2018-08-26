@@ -33,7 +33,7 @@ public class InventoryItem_Ingredients_Id implements Serializable {
         return inventoryItem;
     }
 
-    void setInventoryItem(InventoryItem inventoryItem) {
+    public void setInventoryItem(InventoryItem inventoryItem) {
         this.inventoryItem = inventoryItem;
     }
 
@@ -42,7 +42,7 @@ public class InventoryItem_Ingredients_Id implements Serializable {
         return ingredient;
     }
 
-    void setIngredient(InventoryItem ingredient) {
+    public void setIngredient(InventoryItem ingredient) {
         this.ingredient = ingredient;
     }
 }

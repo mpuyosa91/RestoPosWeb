@@ -21,7 +21,7 @@ public class InventoryItem {
     @Id
     @GeneratedValue(generator = "uuid")
     @Column(columnDefinition = "BINARY(16)")
-    private UUID    id;
+    private UUID id;
 
     @JoinColumn(name = "serial")
     private Integer serial;
@@ -46,6 +46,20 @@ public class InventoryItem {
     private double      volume      = 0;
     private double      weight      = 0;
     private double      units       = 1;
+
+    public void copyFrom(InventoryItem inventoryItem) {
+        setSite(inventoryItem.site);
+        setEnabled(inventoryItem.enabled);
+        setComposition(inventoryItem.composition);
+        setType(inventoryItem.type);
+        setFinal_item(inventoryItem.final_item);
+        setName(inventoryItem.name);
+        setPrice(inventoryItem.price);
+        setMeasureType(inventoryItem.measureType);
+        setVolume(inventoryItem.volume);
+        setWeight(inventoryItem.weight);
+        setUnits(inventoryItem.units);
+    }
 
     public UUID getId() {
         return id;
@@ -76,7 +90,7 @@ public class InventoryItem {
     }
 
     public void setComposition(Set<InventoryItem_Ingredients> composition) {
-        this.composition = composition;
+        this.composition.addAll(composition);
     }
 
     public Integer getSerial() {
@@ -89,19 +103,24 @@ public class InventoryItem {
             int firstDigit = Integer.parseInt(Integer.toString(serial).substring(0, 1));
             switch (firstDigit) {
                 case 1:
-                    setType(Type.RawFood);
+                    if (getType() != Type.RawFood)
+                        setType(Type.RawFood);
                     break;
                 case 2:
-                    setType(Type.Mixture);
+                    if (getType() != Type.Mixture)
+                        setType(Type.Mixture);
                     break;
                 case 3:
-                    setType(Type.Product);
+                    if (getType() != Type.Product)
+                        setType(Type.Product);
                     break;
                 case 4:
-                    setType(Type.MenuPlate);
+                    if (getType() != Type.MenuPlate)
+                        setType(Type.MenuPlate);
                     break;
                 default:
-                    setType(Type.RawFood);
+                    if (getType() != Type.RawFood)
+                        setType(Type.RawFood);
             }
         }
         this.serial = serial;
@@ -130,7 +149,8 @@ public class InventoryItem {
             }
             String serial_string = Integer.toString(serial);
             serial_string = fistDigit.concat(serial_string.substring(1));
-            setSerial(Integer.parseInt(serial_string));
+            if (getSerial() != Integer.parseInt(serial_string))
+                setSerial(Integer.parseInt(serial_string));
         }
         this.type = type;
     }
@@ -204,10 +224,18 @@ public class InventoryItem {
         }
     }
 
-    enum MeasureType {Weight, Volume, Units}
-
-
-    public enum Type {RawFood, Mixture, Product, MenuPlate}
+    public void setQuantity(Double quantity) {
+        if (measureType == null)
+            setMeasureType(MeasureType.Units);
+        switch (measureType) {
+            case Weight:
+                weight = quantity;
+            case Volume:
+                volume = quantity;
+            case Units:
+                units = quantity;
+        }
+    }
 
     @Override
     public String toString() {
@@ -227,4 +255,9 @@ public class InventoryItem {
                 ", units=" + units +
                 '}';
     }
+
+    enum MeasureType {Weight, Volume, Units}
+
+
+    public enum Type {RawFood, Mixture, Product, MenuPlate}
 }

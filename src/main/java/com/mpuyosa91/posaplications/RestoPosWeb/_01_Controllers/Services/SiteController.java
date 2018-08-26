@@ -181,7 +181,7 @@ public class SiteController {
         return siteRepository.save(savedSite).getId();
     }
 
-    @PostMapping(path = "/createTable/{site_id}")
+    @PostMapping(path = "/{site_id}/create-table")
     public ResponseEntity createTable(@PathVariable UUID site_id, @RequestBody CustomerTable customer) {
         String server_port = environment.getProperty("local.server.port");
 
@@ -214,7 +214,7 @@ public class SiteController {
         return ResponseEntity.badRequest().build();
     }
 
-    @PostMapping(path = "/createUser/{site_id}")
+    @PostMapping(path = "/{site_id}/create-user")
     public ResponseEntity createUser(@PathVariable UUID site_id, @RequestBody User bodyUser) {
 
         String server_port = environment.getProperty("local.server.port");
@@ -254,19 +254,38 @@ public class SiteController {
         return ResponseEntity.badRequest().build();
     }
 
-    @GetMapping(path = "/{id}")
+    @PostMapping(path = "/{site_id}/create-inventory-item")
     public @ResponseBody
-    Site read(@PathVariable UUID id) {
-        return (siteRepository.findById(id).isPresent()) ? siteRepository.findById(id).get() : null;
+    UUID createInventoryItem(@PathVariable UUID site_id, @RequestBody InventoryItem inventoryItem) {
+        boolean canCreate = siteRepository.findById(site_id).isPresent() &&
+                inventoryItem.getSerial() != null && inventoryItem.getName() != null;
+
+        //TODO Buscar por site y por serial que no este creado para poder crear.
+
+        if (canCreate) {
+            Site site = siteRepository.findById(site_id).get();
+            inventoryItem.setSite(site);
+            inventoryRepository.save(inventoryItem);
+
+            return inventoryItem.getId();
+        }
+
+        return null;
     }
 
-    @GetMapping(path = "/allUsers/{id}")
+    @GetMapping(path = "/{site_id}")
     public @ResponseBody
-    Iterable<User> readAllUsersOfSite(@PathVariable UUID id) {
-        return userRepository.getAllOfSite(id);
+    Site read(@PathVariable UUID site_id) {
+        return (siteRepository.findById(site_id).isPresent()) ? siteRepository.findById(site_id).get() : null;
     }
 
-    @GetMapping(path = "/{site_id}/search-by-username/{username}")
+    @GetMapping(path = "/{site_id}/all-users")
+    public @ResponseBody
+    Iterable<User> readAllUsersOfSite(@PathVariable UUID site_id) {
+        return userRepository.getAllOfSite(site_id);
+    }
+
+    @GetMapping(path = "/{site_id}/search-user-by-username/{username}")
     public @ResponseBody
     User searchUserByUsername(@PathVariable UUID site_id, @PathVariable String username) {
 
@@ -289,10 +308,10 @@ public class SiteController {
         return user;
     }
 
-    @GetMapping(path = "/allCustomers/{id}")
+    @GetMapping(path = "/{site_id}/all-customers")
     public @ResponseBody
-    Iterable<Customer> readAllCustomersOfSite(@PathVariable UUID id) {
-        return customerRepository.findAllOfSite(id);
+    Iterable<Customer> readAllCustomersOfSite(@PathVariable UUID site_id) {
+        return customerRepository.findAllOfSite(site_id);
     }
 
     @GetMapping(path = "/all")
@@ -305,6 +324,26 @@ public class SiteController {
     public @ResponseBody
     Iterable<Site> readAll() {
         return siteRepository.findAll();
+    }
+
+    @PutMapping(path = "/{site_id}")
+    public ResponseEntity update(@PathVariable UUID site_id, @RequestBody Site site) {
+
+        ResponseEntity responseEntity;
+
+        Site siteToUpdate = (siteRepository.findById(site_id).isPresent()) ? siteRepository.findById(site_id).get() : null;
+
+        if (siteToUpdate != null) {
+            // TODO: Agregar otros updates
+            if (site.getUsers() != null) siteToUpdate.getUsers().addAll(site.getUsers());
+            if (site.getCustomers() != null) siteToUpdate.getCustomers().addAll(site.getCustomers());
+            siteRepository.save(siteToUpdate);
+            responseEntity = ResponseEntity.accepted().build();
+        } else {
+            responseEntity = ResponseEntity.notFound().build();
+        }
+
+        return responseEntity;
     }
 
     @PutMapping(path = "/enable")
@@ -335,30 +374,32 @@ public class SiteController {
         return (canDisable) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
     }
 
-    @PutMapping(path = "/{id}")
-    public ResponseEntity update(@PathVariable UUID id, @RequestBody Site site) {
+    @PutMapping(path = "/{site_id}/update-inventory-item/{inventoryItem_id}")
+    public @ResponseBody
+    UUID updateInventoryItem(@PathVariable UUID site_id,
+                             @PathVariable UUID inventoryItem_id,
+                             @RequestBody InventoryItem inventoryItem) {
+        boolean canUpdate = siteRepository.findById(site_id).isPresent() &&
+                inventoryRepository.findById(inventoryItem_id).isPresent() &&
+                inventoryItem.getSerial() != null && inventoryItem.getName() != null;
 
-        ResponseEntity responseEntity;
+        if (canUpdate) {
+            Site          site               = siteRepository.findById(site_id).get();
+            InventoryItem savedInventoryItem = inventoryRepository.findById(inventoryItem_id).get();
+            savedInventoryItem.copyFrom(inventoryItem);
+            savedInventoryItem.setSite(site);
+            inventoryRepository.save(savedInventoryItem);
 
-        Site siteToUpdate = (siteRepository.findById(id).isPresent()) ? siteRepository.findById(id).get() : null;
-
-        if (siteToUpdate != null) {
-            // TODO: Agregar otros updates
-            if (site.getUsers() != null) siteToUpdate.getUsers().addAll(site.getUsers());
-            if (site.getCustomers() != null) siteToUpdate.getCustomers().addAll(site.getCustomers());
-            siteRepository.save(siteToUpdate);
-            responseEntity = ResponseEntity.accepted().build();
-        } else {
-            responseEntity = ResponseEntity.notFound().build();
+            return savedInventoryItem.getId();
         }
 
-        return responseEntity;
+        return null;
     }
 
-    @DeleteMapping(path = "/{id}")
-    public ResponseEntity delete(@PathVariable UUID id) {
+    @DeleteMapping(path = "/{site_id}")
+    public ResponseEntity delete(@PathVariable UUID site_id) {
         try {
-            siteRepository.deleteById(id);
+            siteRepository.deleteById(site_id);
             return ResponseEntity.accepted().build();
         } catch (IllegalArgumentException ignored) {
             return ResponseEntity.badRequest().build();

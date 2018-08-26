@@ -7,6 +7,7 @@ import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Customers.Ex
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Customers.PointOfService;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.InventoryItem;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.SalableItem;
+import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Site;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Printers.PrinterModel;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.*;
 import com.mpuyosa91.posaplications.RestoPosWeb._01_Controllers.Model_Helpers;
@@ -70,10 +71,16 @@ public class CustomerController {
         return customerRepository.save(customer);
     }
 
-    @GetMapping(path = "/{id}")
+    @GetMapping(path = "/{customer_id}")
     public @ResponseBody
-    Customer read(@PathVariable UUID id) {
-        return (customerRepository.findById(id).isPresent()) ? customerRepository.findById(id).get() : null;
+    Customer read(@PathVariable UUID customer_id) {
+        return (customerRepository.findById(customer_id).isPresent()) ? customerRepository.findById(customer_id).get() : null;
+    }
+
+    @GetMapping(path = "/{customer_id}/get_site_of")
+    public @ResponseBody
+    Site getSiteOf(@PathVariable UUID customer_id) {
+        return customerRepository.findSite(customer_id);
     }
 
     @GetMapping(path = "/all")
@@ -86,24 +93,6 @@ public class CustomerController {
     public @ResponseBody
     Iterable<Customer> readAll() {
         return customerRepository.findAll();
-    }
-
-    @PutMapping(path = "/{id}")
-    public ResponseEntity update(@PathVariable UUID id, @RequestBody Customer customer) {
-
-        ResponseEntity responseEntity;
-
-        Customer siteToUpdate = (customerRepository.findById(id).isPresent()) ? customerRepository.findById(id).get() : null;
-
-        if (siteToUpdate != null) {
-            //TODO: Para clonar
-            customerRepository.save(siteToUpdate);
-            responseEntity = ResponseEntity.accepted().build();
-        } else {
-            responseEntity = ResponseEntity.notFound().build();
-        }
-
-        return responseEntity;
     }
 
     @PutMapping(path = "/link")
@@ -164,23 +153,44 @@ public class CustomerController {
                 ResponseEntity.badRequest().build();
     }
 
-    @PutMapping(path = "/add_item/{id}")
-    public ResponseEntity<Object> addItem(@PathVariable UUID id, @RequestBody Map<String, String> json) {
+    @PutMapping(path = "/{customer_id}")
+    public ResponseEntity update(@PathVariable UUID customer_id, @RequestBody Customer customer) {
+
+        ResponseEntity responseEntity;
+
+        Customer customerToUpdate = (customerRepository.findById(customer_id).isPresent()) ?
+                customerRepository.findById(customer_id).get() : null;
+
+        if (customerToUpdate != null) {
+            customerToUpdate.setPosition_col(customer.getPosition_col());
+            customerToUpdate.setPosition_row(customer.getPosition_row());
+            customerRepository.save(customerToUpdate);
+            responseEntity = ResponseEntity.accepted().build();
+        } else {
+            responseEntity = ResponseEntity.notFound().build();
+        }
+
+        return responseEntity;
+    }
+
+    @PutMapping(path = "/{customer_id}/user_add_item/{user_id}")
+    public ResponseEntity<Object> addItem(@PathVariable UUID customer_id,
+                                          @PathVariable UUID user_id,
+                                          @RequestBody Map<String, String> json) {
 
         try {
 
             UUID inventoryItem_id = UUID.fromString(json.get("item"));
-            UUID user_id          = UUID.fromString(json.get("user"));
-            boolean canAdd = customerRepository.findById(id).isPresent() &&
+            boolean canAdd = customerRepository.findById(customer_id).isPresent() &&
                     userRepository.findById(user_id).isPresent() &&
                     inventoryRepository.findById(inventoryItem_id).isPresent() &&
                     (json.get("notes") != null);
 
-            // TODO: Verificar que el usuario y el item si sean de la sede.
+            // TODO: Verificar que el usuario y el item si sean de la misma sede.
 
             if (canAdd) {
 
-                Customer customer = customerRepository.findById(id).get();
+                Customer customer = customerRepository.findById(customer_id).get();
                 SalableItem salableItem = new SalableItem(
                         inventoryRepository.findById(inventoryItem_id).get(),
                         json.get("notes"));
@@ -189,7 +199,6 @@ public class CustomerController {
                         salableItem);
 
                 customerRepository.save(customer);
-                salableItemRepository.save(salableItem);
 
             }
             return (canAdd) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
@@ -200,18 +209,74 @@ public class CustomerController {
 
     }
 
-    @PutMapping(path = "/remove_item/{id}")
-    public ResponseEntity<Object> removeItem(@PathVariable UUID id, @RequestBody Map<String, String> json) {
+    @PutMapping(path = "/{customer_id}/user_add_salable/{user_id}")
+    public ResponseEntity<Object> addItem(@PathVariable UUID customer_id,
+                                          @PathVariable UUID user_id,
+                                          @RequestBody SalableItem salableItem) {
+
+        try {
+
+            boolean canAdd = customerRepository.findById(customer_id).isPresent() &&
+                    userRepository.findById(user_id).isPresent();
+
+            // TODO: Verificar que el usuario y el item si sean de la misma sede.
+
+            if (canAdd) {
+
+                Customer customer = customerRepository.findById(customer_id).get();
+                customer.addItem(userRepository.findById(user_id).get(), salableItem);
+
+                customerRepository.save(customer);
+                billRepository.save(customer.getCurrentBill());
+
+            }
+            return (canAdd) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
+
+        } catch (IllegalArgumentException | NullPointerException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+    }
+
+    @PutMapping(path = "/{customer_id}/remove_salable/{salable_id}")
+    public ResponseEntity<Object> removeItem(@PathVariable UUID customer_id, @PathVariable UUID salable_id) {
+
+        try {
+
+            boolean canRemove = customerRepository.findById(customer_id).isPresent() &&
+                    salableItemRepository.findById(salable_id).isPresent();
+            boolean wasRemoved = false;
+
+            if (canRemove) {
+
+                Customer    customer    = customerRepository.findById(customer_id).get();
+                SalableItem salableItem = salableItemRepository.findById(salable_id).get();
+                wasRemoved = customer.removeItem(salableItem);
+
+                customerRepository.save(customer);
+                salableItemRepository.delete(salableItem);
+
+            }
+            return (canRemove && wasRemoved) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
+
+        } catch (IllegalArgumentException | NullPointerException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+    }
+
+    @PutMapping(path = "/{customer_id}/remove_item")
+    public ResponseEntity<Object> removeItem(@PathVariable UUID customer_id, @RequestBody Map<String, String> json) {
         try {
 
             UUID salableItem_Id = UUID.fromString(json.get("item"));
-            boolean canRemove = customerRepository.findById(id).isPresent() &&
+            boolean canRemove = customerRepository.findById(customer_id).isPresent() &&
                     salableItemRepository.findById(salableItem_Id).isPresent() &&
                     (json.get("notes") != null);
 
             if (canRemove) {
 
-                Customer    customer    = customerRepository.findById(id).get();
+                Customer    customer    = customerRepository.findById(customer_id).get();
                 SalableItem salableItem = salableItemRepository.findById(salableItem_Id).get();
 
                 boolean wasRemoved = customer.removeItem(salableItem);
@@ -232,16 +297,16 @@ public class CustomerController {
         }
     }
 
-    @PutMapping(path = "/sent_to_kitchen/{id}")
-    public ResponseEntity<Object> sendToKitchen(@PathVariable UUID id, @RequestBody Map<String, UUID> json) {
+    @PutMapping(path = "/{customer_id}/sent_to_kitchen")
+    public ResponseEntity<Object> sendToKitchen(@PathVariable UUID customer_id, @RequestBody Map<String, UUID> json) {
         try {
 
-            boolean canSend = customerRepository.findById(id).isPresent() &&
+            boolean canSend = customerRepository.findById(customer_id).isPresent() &&
                     json.get("kitchen") != null;
 
             if (canSend) {
 
-                Customer customer = customerRepository.findById(id).get();
+                Customer customer = customerRepository.findById(customer_id).get();
 
                 printCommand(customer, "CognitiveTPG Receipt");
 
@@ -260,13 +325,13 @@ public class CustomerController {
         }
     }
 
-    @PutMapping(path = "/close/{id}")
-    public ResponseEntity<Object> close(@PathVariable UUID id, @RequestBody Map<String, UUID> json) {
-        boolean canClose = customerRepository.findById(id).isPresent() &&
+    @PutMapping(path = "/{customer_id}/close")
+    public ResponseEntity<Object> close(@PathVariable UUID customer_id, @RequestBody Map<String, UUID> json) {
+        boolean canClose = customerRepository.findById(customer_id).isPresent() &&
                 json.get("pos") != null;
 
         if (canClose) {
-            Customer customer = customerRepository.findById(id).get();
+            Customer customer = customerRepository.findById(customer_id).get();
             if (customer.isOccupied()) {
                 Bill bill = customer.evacuate();
 
@@ -292,10 +357,10 @@ public class CustomerController {
         return (canClose) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
     }
 
-    @DeleteMapping(path = "/{id}")
-    public ResponseEntity delete(@PathVariable UUID id) {
+    @DeleteMapping(path = "/{customer_id}")
+    public ResponseEntity delete(@PathVariable UUID customer_id) {
         try {
-            customerRepository.deleteById(id);
+            customerRepository.deleteById(customer_id);
             return ResponseEntity.accepted().build();
         } catch (IllegalArgumentException ignored) {
             return ResponseEntity.badRequest().build();

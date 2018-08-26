@@ -7,6 +7,7 @@ package com.mpuyosa91.posaplications.RestoPosWeb._02_Views._1_Pedidos.Mesas;
 
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Accounting.Bill;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Crew.User;
+import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Customers.Customer;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Customers.ICustomer;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.InventoryItem;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.SalableItem;
@@ -29,7 +30,7 @@ import java.util.*;
 public class PedidosFrame extends WindowFrame {
 
     final int initialX = 60, initialY = 60, stepX = 250, stepY = 150, cant = 2;
-    private final ICustomer          cliente;
+    private final UUID               cliente_id;
     private final PedidosFrame       thisFrame;
     private       PedidosPanel       father;
     private       JPanel             clientePanel;
@@ -47,16 +48,18 @@ public class PedidosFrame extends WindowFrame {
     private       JPanel             productosPanel;
     private       JScrollPane        productosScrollPane;
 
-    public PedidosFrame(MainFrame contextFrame, ICustomer cliente) {
+    public PedidosFrame(MainFrame contextFrame, UUID cliente_id) {
         super(contextFrame);
-        this.cliente = cliente;
+        this.cliente_id = cliente_id;
+        Customer customer = GeneralController.getCustomer(cliente_id);
         this.thisFrame = this;
-        createObjects();
-        createPanels();
-        statusRefresh();
+        createObjects(customer);
+        createPanels(customer);
+        statusRefresh(customer);
     }
 
     public void startframe(User user, PedidosPanel father) {
+        Customer cliente = GeneralController.getCustomer(cliente_id);
         this.user = user;
         this.father = father;
         boolean valid = true;
@@ -86,9 +89,10 @@ public class PedidosFrame extends WindowFrame {
         }
         if (valid) {
             consoleFlush();
-            printActual();
+            printActual(cliente);
             setVisible(true);
         }
+        setPedidoListLabelAndButtons();
     }
 
     @Override
@@ -105,7 +109,7 @@ public class PedidosFrame extends WindowFrame {
     }
 //------------------------------------------------------------------------------
 
-    private void createObjects() {
+    private void createObjects(Customer cliente) {
         clientePanel = new JPanel();
         notificarCocinaButton = new JButton("Enviar Nuevas Comandas");
         notificarCocinaButton.setEnabled(false);
@@ -115,27 +119,32 @@ public class PedidosFrame extends WindowFrame {
         seleccionProductoButton = new JButton("Productos");
         seleccionDeLaCartaButton = new JButton("De La Carta");
         productosPanel = new JPanel();
-        productosScrollPane = new JScrollPane(productosPanel);
-        productosScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        productosScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        productosScrollPane = new JScrollPane();
     }
 
-    private void createPanels() {
-        createClientePanel();
+    private void createPanels(Customer customer) {
+        createClientePanel(customer);
         containerPanel.add(clientePanel);
     }
 
-    private void statusRefresh() {
+    private void statusRefresh(Customer cliente) {
         if (cliente.isOccupied()) {
             informationLabel.setText("Ocupada");
             navigationPanel.setBackground(Color.LIGHT_GRAY);
+            cerrarClienteButton.setEnabled(true);
+            if (!cliente.getType().equals(ICustomer.CustomerTypes.ExternalCustomer) &&
+                    !cliente.getType().equals(ICustomer.CustomerTypes.PointOfService)) {
+                notificarCocinaButton.setEnabled(true);
+            }
         } else {
             informationLabel.setText("Disponible");
             navigationPanel.setBackground(Color.green);
+            cerrarClienteButton.setEnabled(false);
+            notificarCocinaButton.setEnabled(false);
         }
     }
 
-    private void createClientePanel() {
+    private void createClientePanel(Customer cliente) {
         int x = 20, y = 100, w = 350, h = 50, dx = 200, dw = 20, dy = 50;
 
         labelList = new ArrayList();
@@ -273,7 +282,7 @@ public class PedidosFrame extends WindowFrame {
                     contextFrame,
                     thisFrame,
                     true,
-                    GeneralController.getMainProduct());
+                    GeneralController.getRootInventoryItem(InventoryItem.Type.Product));
             seleccionador.startDialog();
             if (seleccionador.externalDto != null) {
                 ingresarProducto(seleccionador.externalDto);
@@ -284,7 +293,7 @@ public class PedidosFrame extends WindowFrame {
                     contextFrame,
                     thisFrame,
                     true,
-                    GeneralController.getMainMenuPlate());
+                    GeneralController.getRootInventoryItem(InventoryItem.Type.MenuPlate));
             seleccionador.startDialog();
             if (seleccionador.externalDto != null) {
                 ingresarProducto(seleccionador.externalDto);
@@ -307,9 +316,13 @@ public class PedidosFrame extends WindowFrame {
         x += w * 2 / 4 + 10;
         seleccionDeLaCartaButton.setBounds(x, y, w / 2, h);
         x += w * 2 / 4 + 10;
-        productosScrollPane.setBounds(0, 150, LeftPanel_Rectangle.width, LeftPanel_Rectangle.height - 150);
         productosPanel.setLayout(null);
+        productosScrollPane.setBounds(0, 150, LeftPanel_Rectangle.width, LeftPanel_Rectangle.height - 150);
         productosScrollPane.setBackground(Color.red);
+        productosScrollPane.setViewportView(productosPanel);
+        productosScrollPane.getVerticalScrollBar().setUnitIncrement(10);
+        productosScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        productosScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
         clientePanel.add(ingresarCodigoTextLabel);
         clientePanel.add(ingresarCodigoTextField);
@@ -318,53 +331,76 @@ public class PedidosFrame extends WindowFrame {
         clientePanel.add(cerrarClienteButton);
         clientePanel.add(notificarCocinaButton);
         clientePanel.add(productosScrollPane);
-        //clientePanel.add(productosPanel);
 
         clientePanel.setBounds(LeftPanel_Rectangle);
         clientePanel.setLayout(null);
 
     }
 
+    private void createButton(Customer cliente, SalableItem dto, int x, int y, int w, int w2, int h, long quantity) {
+        JButton button = new JButton("X");
+        button.addActionListener(new buttonProductoActionListener(dto, cliente, quantity));
+        button.setBounds(x, y, w2, h);
+        buttonList.add(button);
+        productosPanel.add(button);
+
+        JLabel label;
+        if (dto.getNotes().equals("")) {
+            label = new JLabel(
+                    "<" + dto.getSerial() + "> x" + quantity + " " +
+                            " " + dto.getName());
+        } else {
+            label = new JLabel(
+                    "<" + dto.getSerial() + "> x" + quantity + " " +
+                            " " + dto.getName() +
+                            ". Notas: " + dto.getNotes() + ".");
+        }
+
+        label.setBounds(x + w2, y, w, h);
+        labelList.add(label);
+        productosPanel.add(label);
+    }
+
     private void setPedidoListLabelAndButtons() {
-        int x = 60, y = 20, w = 300, h = 50, dx = 100, w2 = 50, dy = 50;
+        Customer cliente = GeneralController.getCustomer(cliente_id);
+        int      x       = 60, y = 20, w = 300, h = 50, dx = 100, w2 = 50, dy = 50;
         labelList.forEach((label) -> {
             productosPanel.remove(label);
         });
         buttonList.forEach((button) -> {
             productosPanel.remove(button);
         });
-        Set<Integer> showedItems = new HashSet<>();
-        for (SalableItem dto : cliente.getItemListUnBilled()) {
-            JButton button = new JButton("X");
-            button.addActionListener(new buttonProductoActionListener(dto, cliente));
-            button.setBounds(x, y, w2, h);
-            buttonList.add(button);
-            productosPanel.add(button);
 
-            if (!showedItems.contains(dto.getSerial())) {
-                long quantity = cliente.getItemListBilled().stream()
-                        .filter(item -> dto.getSerial().equals(item.getSerial())).count();
-                JLabel label = new JLabel(
-                        "<" + dto.getId() + "> " +
-                                "x" + (int) quantity +
-                                " " + dto.getName());
-                label.setBounds(x + w2, y, w, h);
-                labelList.add(label);
-                productosPanel.add(label);
-                showedItems.add(dto.getSerial());
+        ArrayList<SalableItem> orderedList = new ArrayList<>(cliente.getItemListUnBilled());
+        orderedList.sort(Comparator.comparingInt(SalableItem::getSerial).reversed());
+
+        Set<Integer> showedItems = new HashSet<>();
+        for (SalableItem dto : orderedList) {
+            if (dto.getSerial().toString().substring(0, 1).equals("3")) {
+                if (!showedItems.contains(dto.getSerial())) {
+                    long quantity = orderedList.stream()
+                            .filter(item -> dto.getSerial().equals(item.getSerial())).count();
+                    createButton(cliente, dto, x, y, w, w2, h, quantity);
+                    y += dy;
+                    showedItems.add(dto.getSerial());
+                }
+            } else if (dto.getSerial().toString().substring(0, 1).equals("4")) {
+                createButton(cliente, dto, x, y, w, w2, h, 1);
                 y += dy;
             }
 
         }
+
         productosPanel.setPreferredSize(new Dimension(LeftPanel_Rectangle.width, y));
         productosPanel.repaint();
+        productosScrollPane.revalidate();
 
         consoleFlush();
-        printActual();
-        statusRefresh();
+        printActual(cliente);
+        statusRefresh(cliente);
     }
 
-    private void printActual() {
+    private void printActual(Customer cliente) {
 
         if (cliente.isOccupied()) {
 
@@ -376,7 +412,7 @@ public class PedidosFrame extends WindowFrame {
                     long quantity = cliente.getItemListBilled().stream()
                             .filter(item -> salableItem.getSerial().equals(item.getSerial())).count();
                     String consoleString =
-                            "    <" + salableItem.getId() + "> x" +
+                            "    <" + salableItem.getSerial() + "> x" +
                                     String.format("%03d", (int) quantity) + " " +
                                     salableItem.getName() + " " + (int) (salableItem.getPrice() * quantity);
                     consoleAppend(consoleString);
@@ -387,10 +423,10 @@ public class PedidosFrame extends WindowFrame {
             showedItems = new HashSet<>();
             for (SalableItem salableItem : cliente.getItemListUnBilled()) {
                 if (!showedItems.contains(salableItem.getSerial())) {
-                    long quantity = cliente.getItemListBilled().stream()
+                    long quantity = cliente.getItemListUnBilled().stream()
                             .filter(item -> salableItem.getSerial().equals(item.getSerial())).count();
                     String consoleString =
-                            "  -><" + salableItem.getId() + "> " +
+                            "  -><" + salableItem.getSerial() + "> " +
                                     "x" + String.format("%03d", (int) quantity) + " " +
                                     salableItem.getName() + " " + (int) (salableItem.getPrice() * quantity);
                     consoleAppend(consoleString);
@@ -406,95 +442,99 @@ public class PedidosFrame extends WindowFrame {
     }
 
     private void ingresarProducto(InventoryItem inventoryItem) {
-        boolean            valid, addNew;
-        int                cantidad = 1;
-        JPanel             panel    = new JPanel();
-        JLabel             label    = new JLabel("Ingrese Cantidad de " + inventoryItem.getName() + ":");
-        EnterableTextField quantity = new EnterableTextField(10);
-        panel.add(label);
-        panel.add(quantity);
-        String[] options = new String[]{"Agregar", "Cancelar"};
-        do {
-            int option = JOptionPane.showOptionDialog(
-                    null,
-                    panel,
-                    "Cantidad de " + inventoryItem.getName(),
-                    JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    options,
-                    options[0]);
-            if (option == 0) {
-                if (!quantity.getText().isEmpty()) {
-                    try {
-                        cantidad = Integer.valueOf(quantity.getText());
+        Customer cliente  = GeneralController.getCustomer(cliente_id);
+        int      cantidad = 1;
+
+        switch (inventoryItem.getType()) {
+            case Product:
+
+                boolean valid, addNew;
+                JPanel panel = new JPanel();
+                JLabel label = new JLabel("Ingrese Cantidad de " + inventoryItem.getName() + ":");
+                EnterableTextField quantity = new EnterableTextField(10);
+                panel.add(label);
+                panel.add(quantity);
+                String[] options = new String[]{"Agregar", "Cancelar"};
+                do {
+                    int option = JOptionPane.showOptionDialog(
+                            null,
+                            panel,
+                            "Cantidad de " + inventoryItem.getName(),
+                            JOptionPane.OK_CANCEL_OPTION,
+                            JOptionPane.PLAIN_MESSAGE,
+                            null,
+                            options,
+                            options[0]);
+                    if (option == 0) {
+                        if (!quantity.getText().isEmpty()) {
+                            try {
+                                cantidad = Integer.valueOf(quantity.getText());
+                                valid = true;
+                            } catch (NumberFormatException e) {
+                                valid = false;
+                            }
+                        } else {
+                            valid = true;
+                        }
+                        addNew = true;
+                    } else {
+                        cantidad = 0;
                         valid = true;
-                    } catch (NumberFormatException e) {
-                        valid = false;
+                        addNew = false;
                     }
-                } else {
-                    valid = true;
-                }
-                addNew = true;
-            } else {
-                cantidad = 0;
-                valid = true;
-                addNew = false;
-            }
-            quantity.setText("");
-        } while (!valid);
+                    quantity.setText("");
+                } while (!valid);
 
-        if (addNew &&
-                (inventoryItem.getType() == InventoryItem.Type.Product ||
-                        inventoryItem.getType() == InventoryItem.Type.MenuPlate)) {
-
-            if (!cliente.isOccupied()) {
-                cerrarClienteButton.setEnabled(true);
-                if (!cliente.getType().equals(ICustomer.CustomerTypes.ExternalCustomer) &&
-                        !cliente.getType().equals(ICustomer.CustomerTypes.PointOfService)) {
-                    notificarCocinaButton.setEnabled(true);
-                }
-            }
-
-            for (int i = 0; i < cantidad; i++) {
-
-                SalableItem salableItem = null;
-
-                if (inventoryItem.getType() == InventoryItem.Type.Product)
-                    salableItem = new SalableItem(inventoryItem, "");
-
-                if (inventoryItem.getType() == InventoryItem.Type.MenuPlate) {
-                    salableItem = new SalableItem(inventoryItem, "");
-                    AgregarProductoADeLaCarta auxFrame =
-                            new AgregarProductoADeLaCarta(contextFrame, thisFrame, true);
-                    auxFrame.startFrame(salableItem);
+                if (addNew) {
+                    for (int i = 0; i < cantidad; i++) {
+                        if (GeneralController.addItemToCustomer(cliente, user, inventoryItem, "")) {
+                            continue;
+                        } else {
+                            // TODO Mostrar el fallo
+                            break;
+                        }
+                    }
                 }
 
-                if (salableItem != null)
-                    cliente.addItem(user, salableItem);
-
-            }
-
-            setPedidoListLabelAndButtons();
-            ingresarCodigoTextField.setText("");
-            statusRefresh();
-
+                break;
+            case MenuPlate:
+                SalableItem salableItem = new SalableItem(inventoryItem, "");
+                AgregarProductoADeLaCarta auxFrame =
+                        new AgregarProductoADeLaCarta(contextFrame, thisFrame, true, salableItem);
+                auxFrame.startFrame();
+                if (!GeneralController.addItemToCustomer(cliente, user, salableItem)) {
+                    // TODO Mostrar el fallo
+                    break;
+                }
+                break;
         }
+        setPedidoListLabelAndButtons();
+        ingresarCodigoTextField.setText("");
     }
 
     private class buttonProductoActionListener implements ActionListener {
 
         SalableItem dto;
         ICustomer   cliente;
+        long        quantity;
 
-        public buttonProductoActionListener(SalableItem dto, ICustomer mesa) {
+        public buttonProductoActionListener(SalableItem dto, ICustomer mesa, long quantity) {
             this.dto = dto;
             this.cliente = mesa;
+            this.quantity = quantity;
         }
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            cliente.removeItem(dto);
+            if (dto.getSerial().toString().substring(0, 1).equals("3")) {
+                for (SalableItem salableItem : cliente.getItemListUnBilled()) {
+                    if (salableItem.getSerial().equals(dto.getSerial())) {
+                        GeneralController.removeItemFromCustomer((Customer) cliente, salableItem);
+                    }
+                }
+            } else if (dto.getSerial().toString().substring(0, 1).equals("4")) {
+                GeneralController.removeItemFromCustomer((Customer) cliente, dto);
+            }
             setPedidoListLabelAndButtons();
         }
     }

@@ -47,6 +47,9 @@ public class SalableItem {
     private Calendar readyTime;
     private Calendar deliveryTime;
 
+    public SalableItem() {
+    }
+
     public SalableItem(InventoryItem inventoryItem, String notes) {
         this.notes = notes;
         this.setType(inventoryItem.getType());
@@ -165,5 +168,25 @@ public class SalableItem {
 
     public void setDeliveryTime(Calendar deliveryTime) {
         this.deliveryTime = deliveryTime;
+    }
+
+    @Override
+    public String toString() {
+        return "SalableItem{" +
+                "id=" + id +
+                ", bill=" + bill +
+                ", customer=" + customer +
+                ", user=" + user +
+                ", notes='" + notes + '\'' +
+                ", type=" + type +
+                ", name='" + name + '\'' +
+                ", serial=" + serial +
+                ", price=" + price +
+                ", billed=" + billed +
+                ", delivered=" + delivered +
+                ", orderTime=" + orderTime +
+                ", readyTime=" + readyTime +
+                ", deliveryTime=" + deliveryTime +
+                '}';
     }
 }

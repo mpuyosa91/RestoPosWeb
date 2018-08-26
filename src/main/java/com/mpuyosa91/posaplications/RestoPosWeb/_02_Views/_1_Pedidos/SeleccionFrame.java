@@ -15,7 +15,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import java.util.Set;
 
 /**
  * @author MoisesE
@@ -90,12 +89,12 @@ public class SeleccionFrame extends MiniWindowDialog {
         productosListenerList = new ArrayList<>();
         seleccionProductoPanel.repaint();
 
-        Set<InventoryItem> dtoDown = GeneralController.getChilds(dto);
+        ArrayList<InventoryItem> dtoDown = GeneralController.getChildes(dto);
 
         int i = 0;
         for (InventoryItem item : dtoDown) {
             String buttonString = "<html><center>" + item.getName() + "<br>" +
-                    "&lt;" + String.valueOf(item.getId()) + "&gt;</center></html>";
+                    "&lt;" + String.valueOf(item.getSerial()) + "&gt;</center></html>";
             productosButtonList.add(new JButton(buttonString));
             seleccionProductoPanel.add(productosButtonList.get(i));
             seleccionProductoPanel.setPreferredSize(new Dimension(
@@ -134,10 +133,6 @@ public class SeleccionFrame extends MiniWindowDialog {
                 createButtons(producto);
             else {
                 externalDto = GeneralController.getInventoryItem(producto.getSerial());
-                if (showMesgSys) {
-                    System.out.println("..................................");
-                    System.out.println(externalDto);
-                }
                 exit_hide();
             }
         }

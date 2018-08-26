@@ -85,7 +85,7 @@ public class PedidosPanel extends javax.swing.JPanel {
         }
         frameCustomersMap = new HashMap<>();
         for (Customer customer : GeneralController.getCustomerList()) {
-            PedidosFrame pedidosFrame = new PedidosFrame(mainFrame, customer);
+            PedidosFrame pedidosFrame = new PedidosFrame(mainFrame, customer.getId());
             frameCustomersMap.put(customer.getId().toString(), pedidosFrame);
         }
         setButtonsColors();
