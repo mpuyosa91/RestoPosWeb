@@ -97,23 +97,21 @@ public class CustomerController {
 
     @PutMapping(path = "/link")
     public ResponseEntity link(@RequestBody Map<String, UUID> json) {
-        return Model_Helpers.link_customer_customer(json, customerRepository) ?
-                ResponseEntity.accepted().build() :
-                ResponseEntity.badRequest().build();
+        return Model_Helpers.link_customer_customer(json,
+                                                    customerRepository) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
     }
 
     @PutMapping(path = "/unlink")
     public ResponseEntity unlink(@RequestBody Map<String, UUID> json) {
-        return Model_Helpers.unlink_customer_customer(json, customerRepository) ?
-                ResponseEntity.accepted().build() :
-                ResponseEntity.badRequest().build();
+        return Model_Helpers.unlink_customer_customer(json,
+                                                      customerRepository) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
     }
 
     @PutMapping(path = "/enable")
     public ResponseEntity<Object> enable(@RequestBody Map<String, UUID> json) {
 
         boolean canEnable = json.get("customer") != null &&
-                customerRepository.findById(json.get("customer")).isPresent();
+                            customerRepository.findById(json.get("customer")).isPresent();
 
         if (canEnable) {
             Customer customer = customerRepository.findById(json.get("customer")).get();
@@ -128,7 +126,7 @@ public class CustomerController {
     public ResponseEntity<Object> disable(@RequestBody Map<String, UUID> json) {
 
         boolean canDisable = json.get("customer") != null &&
-                customerRepository.findById(json.get("customer")).isPresent();
+                             customerRepository.findById(json.get("customer")).isPresent();
 
         if (canDisable) {
             Customer customer = customerRepository.findById(json.get("customer")).get();
@@ -141,16 +139,16 @@ public class CustomerController {
 
     @PutMapping(path = "/add_to_site")
     public ResponseEntity<Object> addUserToSite(@RequestBody Map<String, UUID> json) {
-        return (link_site_customer(json, siteRepository, customerRepository)) ?
-                ResponseEntity.accepted().build() :
-                ResponseEntity.badRequest().build();
+        return (
+                link_site_customer(json, siteRepository, customerRepository)
+        ) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
     }
 
     @PutMapping(path = "/remove_from_site")
     public ResponseEntity<Object> removeUserFromSite(@RequestBody Map<String, UUID> json) {
-        return (unlink_site_customer(json, siteRepository, customerRepository)) ?
-                ResponseEntity.accepted().build() :
-                ResponseEntity.badRequest().build();
+        return (
+                unlink_site_customer(json, siteRepository, customerRepository)
+        ) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
     }
 
     @PutMapping(path = "/{customer_id}")
@@ -158,8 +156,8 @@ public class CustomerController {
 
         ResponseEntity responseEntity;
 
-        Customer customerToUpdate = (customerRepository.findById(customer_id).isPresent()) ?
-                customerRepository.findById(customer_id).get() : null;
+        Customer customerToUpdate = (customerRepository.findById(customer_id).isPresent()) ? customerRepository.findById(
+                customer_id).get() : null;
 
         if (customerToUpdate != null) {
             customerToUpdate.setPosition_col(customer.getPosition_col());
@@ -182,21 +180,18 @@ public class CustomerController {
 
             UUID inventoryItem_id = UUID.fromString(json.get("item"));
             boolean canAdd = customerRepository.findById(customer_id).isPresent() &&
-                    userRepository.findById(user_id).isPresent() &&
-                    inventoryRepository.findById(inventoryItem_id).isPresent() &&
-                    (json.get("notes") != null);
+                             userRepository.findById(user_id).isPresent() &&
+                             inventoryRepository.findById(inventoryItem_id).isPresent() &&
+                             (json.get("notes") != null);
 
             // TODO: Verificar que el usuario y el item si sean de la misma sede.
 
             if (canAdd) {
 
                 Customer customer = customerRepository.findById(customer_id).get();
-                SalableItem salableItem = new SalableItem(
-                        inventoryRepository.findById(inventoryItem_id).get(),
-                        json.get("notes"));
-                customer.addItem(
-                        userRepository.findById(user_id).get(),
-                        salableItem);
+                SalableItem salableItem = new SalableItem(inventoryRepository.findById(inventoryItem_id).get(),
+                                                          json.get("notes"));
+                customer.addItem(userRepository.findById(user_id).get(), salableItem);
 
                 customerRepository.save(customer);
 
@@ -217,7 +212,7 @@ public class CustomerController {
         try {
 
             boolean canAdd = customerRepository.findById(customer_id).isPresent() &&
-                    userRepository.findById(user_id).isPresent();
+                             userRepository.findById(user_id).isPresent();
 
             // TODO: Verificar que el usuario y el item si sean de la misma sede.
 
@@ -244,7 +239,7 @@ public class CustomerController {
         try {
 
             boolean canRemove = customerRepository.findById(customer_id).isPresent() &&
-                    salableItemRepository.findById(salable_id).isPresent();
+                                salableItemRepository.findById(salable_id).isPresent();
             boolean wasRemoved = false;
 
             if (canRemove) {
@@ -271,8 +266,8 @@ public class CustomerController {
 
             UUID salableItem_Id = UUID.fromString(json.get("item"));
             boolean canRemove = customerRepository.findById(customer_id).isPresent() &&
-                    salableItemRepository.findById(salableItem_Id).isPresent() &&
-                    (json.get("notes") != null);
+                                salableItemRepository.findById(salableItem_Id).isPresent() &&
+                                (json.get("notes") != null);
 
             if (canRemove) {
 
@@ -301,8 +296,7 @@ public class CustomerController {
     public ResponseEntity<Object> sendToKitchen(@PathVariable UUID customer_id, @RequestBody Map<String, UUID> json) {
         try {
 
-            boolean canSend = customerRepository.findById(customer_id).isPresent() &&
-                    json.get("kitchen") != null;
+            boolean canSend = customerRepository.findById(customer_id).isPresent() && json.get("kitchen") != null;
 
             if (canSend) {
 
@@ -326,14 +320,16 @@ public class CustomerController {
     }
 
     @PutMapping(path = "/{customer_id}/close")
-    public ResponseEntity<Object> close(@PathVariable UUID customer_id, @RequestBody Map<String, UUID> json) {
-        boolean canClose = customerRepository.findById(customer_id).isPresent() &&
-                json.get("pos") != null;
+    public @ResponseBody
+    Bill close(@PathVariable UUID customer_id, @RequestBody Map<String, UUID> json) {
+        boolean canClose = customerRepository.findById(customer_id).isPresent() && json.get("pos") != null;
+        Bill    bill     = null;
 
         if (canClose) {
             Customer customer = customerRepository.findById(customer_id).get();
             if (customer.isOccupied()) {
-                Bill bill = customer.evacuate();
+                customer.billAllItems();
+                bill = customer.evacuate();
 
                 // Enviar todos a la cocina (y por consiguiente facturarlos)
                 // UUID kitchen_id = UUID.fromString(json.get("kitchen"));
@@ -354,7 +350,7 @@ public class CustomerController {
             }
         }
 
-        return (canClose) ? ResponseEntity.accepted().build() : ResponseEntity.badRequest().build();
+        return bill;
     }
 
     @DeleteMapping(path = "/{customer_id}")
@@ -391,7 +387,8 @@ public class CustomerController {
         PRINTER.setTextLeft("Comanda:" + " " + commandNumber);
         PRINTER.newLine();
         PRINTER.setTextLeft("Tiempo Clientes: " +
-                                    String.valueOf(round((float) customer.getDurationInSeconds() / 60)) + " Min.");
+                            String.valueOf(round((float) customer.getDurationInSeconds() / 60)) +
+                            " Min.");
         PRINTER.newLine();
         PRINTER.addLineSeperator();
         PRINTER.newLine();
@@ -427,15 +424,16 @@ public class CustomerController {
         PRINTER.feed((byte) 3);
         PRINTER.finit();
 
-        if (valid)
-            //"Kitchen Receipt";
-            r = PrinterModel.feedPrinter(PRINTER.finalCommandSet().getBytes(), printerName);
+        //"Kitchen Receipt";
+        if (valid) r = PrinterModel.feedPrinter(PRINTER.finalCommandSet().getBytes(), printerName);
         else r = false;
 
-        if (r) {
+        //if (r) { FIXME: PONER ESTO COMO ESTABA
+        if (true) {
             customer.billAllItems();
             if (commandNumber >= 99) commandNumber = 0;
-            siteRepository.setCommandNumber(customer.getSite().getId(), commandNumber + 1);
+            customer.getSite().setCommandNumber(commandNumber);
+            siteRepository.save(customer.getSite());
         }
 
         return r;
@@ -451,11 +449,8 @@ public class CustomerController {
 
     private boolean printBill(Bill bill, String printerName) {
         String line44;
-        int idLen = 5,
-                priceLen = 6,
-                quantLen = 4,
-                subTLen = 7,
-                itemLen = PRINTER.getLineSize() - (idLen + priceLen + quantLen + subTLen);
+        int idLen = 5, priceLen = 6, quantLen = 4, subTLen = 7, itemLen = PRINTER.getLineSize() -
+                                                                          (idLen + priceLen + quantLen + subTLen);
         PRINTER.resetAll();
         PRINTER.initialize();
         PRINTER.feedBack((byte) 2);
@@ -476,20 +471,11 @@ public class CustomerController {
         PRINTER.newLine();
         PRINTER.addLineSeperator();
         PRINTER.newLine();
-        line44 = PrinterController
-                .stringToLeftAndFill("Nro", idLen - 1, "fill")
-                .concat(" ");
-        line44 += PrinterController
-                .stringToLeftAndFill("Item", itemLen - 1, "truncate")
-                .concat(" ");
-        line44 += PrinterController
-                .stringToRightAndFill("Prec", priceLen - 1, "fill")
-                .concat(" ");
-        line44 += PrinterController
-                .stringToRightAndFill("#", quantLen - 1, "fill")
-                .concat(" ");
-        line44 += PrinterController
-                .stringToRightAndFill("SubT.", subTLen, "fill");
+        line44 = PrinterController.stringToLeftAndFill("Nro", idLen - 1, "fill").concat(" ");
+        line44 += PrinterController.stringToLeftAndFill("Item", itemLen - 1, "truncate").concat(" ");
+        line44 += PrinterController.stringToRightAndFill("Prec", priceLen - 1, "fill").concat(" ");
+        line44 += PrinterController.stringToRightAndFill("#", quantLen - 1, "fill").concat(" ");
+        line44 += PrinterController.stringToRightAndFill("SubT.", subTLen, "fill");
         PRINTER.setTextLeft(line44);
         PRINTER.newLine();
         PRINTER.addLineSeperator();
@@ -500,26 +486,17 @@ public class CustomerController {
             SalableItem salableItem = bill.getSalableItemMap().get(entry.getKey());
 
             String id = String.valueOf(salableItem.getSerial());
-            line44 = PrinterController
-                    .stringToLeftAndFill(id, idLen - 1, "fill")
-                    .concat(" ");
+            line44 = PrinterController.stringToLeftAndFill(id, idLen - 1, "fill").concat(" ");
             String name = salableItem.getName();
-            line44 += PrinterController
-                    .stringToLeftAndFill(name, itemLen - 1, "truncate")
-                    .concat(" ");
+            line44 += PrinterController.stringToLeftAndFill(name, itemLen - 1, "truncate").concat(" ");
             String price = String.valueOf((int) salableItem.getPrice());
-            line44 += PrinterController
-                    .stringToRightAndFill(price, priceLen - 1, "fill")
-                    .concat(" ");
+            line44 += PrinterController.stringToRightAndFill(price, priceLen - 1, "fill").concat(" ");
 
             String quantity = String.valueOf((int) entry.getValue());
-            line44 += PrinterController
-                    .stringToRightAndFill(quantity, quantLen - 1, "fill")
-                    .concat(" ");
+            line44 += PrinterController.stringToRightAndFill(quantity, quantLen - 1, "fill").concat(" ");
 
             String subT = String.valueOf((int) (salableItem.getPrice() * entry.getValue()));
-            line44 += PrinterController
-                    .stringToRightAndFill(subT, subTLen, "fill");
+            line44 += PrinterController.stringToRightAndFill(subT, subTLen, "fill");
 
             PRINTER.setTextLeft(line44);
             PRINTER.newLine();

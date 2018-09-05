@@ -31,9 +31,10 @@ public class CustomerTable extends Customer {
         this.linkedCustomerTables = new HashSet<>();
         this.linked = false;
         this.type = CustomerTypes.Table;
-        identifier = CustomerTypes.Table.getShowableName() + " " +
-                String.valueOf(this.position_col) +
-                String.valueOf(this.position_row);
+        identifier = CustomerTypes.Table.getShowableName() +
+                     " " +
+                     String.valueOf(this.position_col) +
+                     String.valueOf(this.position_row);
     }
 
     public void link(boolean amIMaster, CustomerTable customerTable) {
@@ -62,10 +63,8 @@ public class CustomerTable extends Customer {
     }
 
     public CustomerTable getMasterLinker() {
-        if (isLinked())
-            return masterLinker;
-        else
-            return null;
+        if (isLinked()) return masterLinker;
+        else return null;
     }
 
     public void setMasterLinker(CustomerTable masterLinker) {
@@ -86,6 +85,13 @@ public class CustomerTable extends Customer {
 
     public void setLinkedCustomerTables(Set<CustomerTable_Link> linkedCustomerTables) {
         this.linkedCustomerTables = linkedCustomerTables;
+    }
+
+    public String getIdentifier() {
+        return CustomerTypes.Table.getShowableName() +
+               " " +
+               String.valueOf(this.position_col) +
+               String.valueOf(this.position_row);
     }
 
     public boolean isOccupied() {

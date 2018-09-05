@@ -181,7 +181,7 @@ public class SiteController {
         return siteRepository.save(savedSite).getId();
     }
 
-    @PostMapping(path = "/{site_id}/create-table")
+    @PostMapping(path = "/{site_id}/create_table")
     public ResponseEntity createTable(@PathVariable UUID site_id, @RequestBody CustomerTable customer) {
         String server_port = environment.getProperty("local.server.port");
 
@@ -214,7 +214,7 @@ public class SiteController {
         return ResponseEntity.badRequest().build();
     }
 
-    @PostMapping(path = "/{site_id}/create-user")
+    @PostMapping(path = "/{site_id}/create_user")
     public ResponseEntity createUser(@PathVariable UUID site_id, @RequestBody User bodyUser) {
 
         String server_port = environment.getProperty("local.server.port");
@@ -377,11 +377,10 @@ public class SiteController {
     @PutMapping(path = "/{site_id}/update-inventory-item/{inventoryItem_id}")
     public @ResponseBody
     UUID updateInventoryItem(@PathVariable UUID site_id,
-                             @PathVariable UUID inventoryItem_id,
-                             @RequestBody InventoryItem inventoryItem) {
+                             @PathVariable UUID inventoryItem_id, @RequestBody InventoryItem inventoryItem) {
         boolean canUpdate = siteRepository.findById(site_id).isPresent() &&
-                inventoryRepository.findById(inventoryItem_id).isPresent() &&
-                inventoryItem.getSerial() != null && inventoryItem.getName() != null;
+                            inventoryRepository.findById(inventoryItem_id).isPresent() &&
+                            inventoryItem.getSerial() != null && inventoryItem.getName() != null;
 
         if (canUpdate) {
             Site          site               = siteRepository.findById(site_id).get();
@@ -391,6 +390,28 @@ public class SiteController {
             inventoryRepository.save(savedInventoryItem);
 
             return savedInventoryItem.getId();
+        }
+
+        return null;
+    }
+
+    @PutMapping(path = "/{site_id}/update_user/{user_id}")
+    public @ResponseBody
+    UUID updateUser(@PathVariable UUID site_id, @PathVariable UUID user_id, @RequestBody User user) {
+        boolean canUpdate = siteRepository.findById(site_id).isPresent() &&
+                            userRepository.findById(user_id).isPresent() &&
+                            user.getFirstName() != null &&
+                            user.getLastName() != null;
+
+        if (canUpdate) {
+
+            Site site      = siteRepository.findById(site_id).get();
+            User savedUser = userRepository.findById(user_id).get();
+            savedUser.updateFromUser(user);
+            savedUser.getSites().add(site);
+            userRepository.save(savedUser);
+
+            return savedUser.getId();
         }
 
         return null;

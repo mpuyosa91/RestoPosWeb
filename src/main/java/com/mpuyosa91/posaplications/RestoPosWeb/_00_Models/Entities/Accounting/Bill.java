@@ -1,5 +1,6 @@
 package com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Accounting;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Customers.Customer;
@@ -23,21 +24,20 @@ public class Bill {
 
     @ManyToOne
     @JoinColumn(name = "site_id")
+    @JsonBackReference
     private Site site;
 
     @OneToMany(mappedBy = "bill", cascade = CascadeType.ALL)
     private Set<SalableItem> salableItems;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinTable(
-            name = "customer_bill",
-            joinColumns = {@JoinColumn(name = "customer_id")},
-            inverseJoinColumns = {@JoinColumn(name = "bill_id")})
+    @JoinTable(name = "customer_bill", joinColumns = {@JoinColumn(name = "customer_id")}, inverseJoinColumns = {@JoinColumn(name = "bill_id")})
     private Set<Customer> customers;
 
     private Double   consumption;
     private Calendar dateTimeStart;
     private Calendar dateTimeFinal;
+    private long     duration;
 
     public UUID getId() {
         return id;
@@ -64,8 +64,7 @@ public class Bill {
     }
 
     public Set<SalableItem> getSalableItems() {
-        if (salableItems == null)
-            this.setSalableItems(new HashSet<>());
+        if (salableItems == null) this.setSalableItems(new HashSet<>());
         return salableItems;
     }
 
@@ -178,5 +177,13 @@ public class Bill {
 
     public void setCustomers(Set<Customer> customers) {
         this.customers = customers;
+    }
+
+    public long getDuration() {
+        return duration;
+    }
+
+    public void setDuration(long duration) {
+        this.duration = duration;
     }
 }

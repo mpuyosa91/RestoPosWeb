@@ -84,6 +84,23 @@ public class InventoryController {
 
     }
 
+    @GetMapping(path = "/{site_id}/{serial}/all_childes")
+    public @ResponseBody
+    Iterable<InventoryItem> readAllChilds(@PathVariable("site_id") UUID site_id, @PathVariable("serial") int serial) {
+        InventoryItem inventoryItem = inventoryRepository.findNode(site_id, serial);
+        boolean       canRead       = inventoryItem != null && !inventoryItem.isFinal_item();
+        int           serial_begin  = serial;
+        int           serial_end    = serial + 1;
+        int           multiplier;
+        if (canRead) {
+            multiplier = (serial >= 0 && serial < 10) ? 10 : 100;
+            serial_begin = serial_begin * multiplier;
+            serial_end = serial_end * multiplier;
+            return inventoryRepository.findAllChilds(site_id, serial_begin, serial_end);
+        } else return null;
+
+    }
+
     @GetMapping(path = "/all-salable")
     public @ResponseBody
     Iterable<SalableItem> readAllSalableEnabled() {

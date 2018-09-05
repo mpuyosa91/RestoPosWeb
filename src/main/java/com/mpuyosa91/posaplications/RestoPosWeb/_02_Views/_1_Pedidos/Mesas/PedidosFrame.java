@@ -132,8 +132,112 @@ public class PedidosFrame extends WindowFrame {
             informationLabel.setText("Ocupada");
             navigationPanel.setBackground(Color.LIGHT_GRAY);
             cerrarClienteButton.setEnabled(true);
+            for (ActionListener actionListener : cerrarClienteButton.getActionListeners()) {
+                cerrarClienteButton.removeActionListener(actionListener);
+            }
+            cerrarClienteButton.addActionListener((ActionEvent e) -> {
+                boolean            valid               = false;
+                JPanel             panel               = new JPanel(new GridBagLayout()); //SpringLayout
+                GridBagConstraints gridBagConstraints  = new GridBagConstraints();
+                JLabel             totalLabel          = new JLabel("Total:  ");
+                JTextField         totalTextField      = new JTextField(10);
+                JLabel             pagoLabel           = new JLabel("Pago:   ");
+                JTextField         pagoTextField       = new JTextField(10);
+                JLabel             devolutionLabel     = new JLabel("Devol:  ");
+                JTextField         devolutionTextField = new JTextField(10);
+
+                totalTextField.setText(NumberFormat.getNumberInstance(Locale.GERMAN).format(cliente.getConsumption()));
+                long a, b;
+                try {
+                    a = (long) NumberFormat.getNumberInstance(Locale.GERMAN).parse(pagoTextField.getText());
+                } catch (ParseException ex) {
+                    a = 0;
+                }
+                b = (int) cliente.getConsumption();
+                totalTextField.setText(NumberFormat.getNumberInstance(Locale.GERMAN).format(b));
+                pagoTextField.setText(NumberFormat.getNumberInstance(Locale.GERMAN).format(a));
+                devolutionTextField.setText(NumberFormat.getNumberInstance(Locale.GERMAN).format(a - b));
+
+                gridBagConstraints.fill = GridBagConstraints.VERTICAL;
+                gridBagConstraints.gridx = 0;
+                gridBagConstraints.gridy = 1;
+                panel.add(totalLabel, gridBagConstraints);
+                gridBagConstraints.gridx = 1;
+                gridBagConstraints.gridy = 1;
+                panel.add(totalTextField, gridBagConstraints);
+                gridBagConstraints.gridx = 0;
+                gridBagConstraints.gridy = 2;
+                panel.add(pagoLabel, gridBagConstraints);
+                gridBagConstraints.gridx = 1;
+                gridBagConstraints.gridy = 2;
+                panel.add(pagoTextField, gridBagConstraints);
+                gridBagConstraints.gridx = 0;
+                gridBagConstraints.gridy = 3;
+                panel.add(devolutionLabel, gridBagConstraints);
+                gridBagConstraints.gridx = 1;
+                gridBagConstraints.gridy = 3;
+                panel.add(devolutionTextField, gridBagConstraints);
+
+                totalTextField.setEditable(false);
+                devolutionTextField.setEditable(false);
+                AbstractAction abstractAction = new AbstractAction() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        long a, b;
+                        try {
+                            a = (long) NumberFormat.getNumberInstance(Locale.GERMAN).parse(pagoTextField.getText());
+                        } catch (ParseException ex) {
+                            a = 0;
+                        }
+                        b = (int) cliente.getConsumption();
+                        totalTextField.setText(NumberFormat.getNumberInstance(Locale.GERMAN).format(b));
+                        pagoTextField.setText(NumberFormat.getNumberInstance(Locale.GERMAN).format(a));
+                        devolutionTextField.setText(NumberFormat.getNumberInstance(Locale.GERMAN).format(a - b));
+                    }
+                };
+                for (int i = 48; i < 58; i++)
+                    pagoTextField.getInputMap().put(KeyStroke.getKeyStroke(i, 0, true), abstractAction);
+                for (int i = 96; i < 106; i++)
+                    pagoTextField.getInputMap().put(KeyStroke.getKeyStroke(i, 0, true), abstractAction);
+                pagoTextField.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, 0, true),
+                                                abstractAction);
+
+                String[] options = new String[]{"Ok", "Factura", "Cancel"};
+                int option = JOptionPane.showOptionDialog(null,
+                                                          panel,
+                                                          cliente.getIdentifier(),
+                                                          JOptionPane.YES_NO_CANCEL_OPTION,
+                                                          JOptionPane.PLAIN_MESSAGE,
+                                                          null,
+                                                          options,
+                                                          options[0]);
+                switch (option) {
+                    case 0:
+                        bill = GeneralController.saveBill(cliente);
+                        setPedidoListLabelAndButtons();
+                        ingresarCodigoTextField.setText("");
+                        cerrarClienteButton.setEnabled(false);
+                        notificarCocinaButton.setEnabled(false);
+                        clientePanel.setVisible(true);
+                        consoleAppend("<<" + cliente.getIdentifier() + " Cerrada>> Consumo: " + bill.getConsumption());
+                        break;
+                    case 1:
+                        bill = GeneralController.printBill(cliente);
+                        setPedidoListLabelAndButtons();
+                        ingresarCodigoTextField.setText("");
+                        cerrarClienteButton.setEnabled(false);
+                        notificarCocinaButton.setEnabled(false);
+                        clientePanel.setVisible(true);
+                        consoleAppend("<<" + cliente.getIdentifier() + " Cerrada>> Consumo: " + bill.getConsumption());
+                        break;
+                    default:
+                        setPedidoListLabelAndButtons();
+                        ingresarCodigoTextField.setText("");
+                        break;
+                }
+            });
             if (!cliente.getType().equals(ICustomer.CustomerTypes.ExternalCustomer) &&
-                    !cliente.getType().equals(ICustomer.CustomerTypes.PointOfService)) {
+                !cliente.getType().equals(ICustomer.CustomerTypes.PointOfService)) {
                 notificarCocinaButton.setEnabled(true);
             }
         } else {
@@ -159,8 +263,7 @@ public class PedidosFrame extends WindowFrame {
                     setPedidoListLabelAndButtons();
                     ingresarCodigoTextField.setText("");
                 } else {
-                    InventoryItem aux =
-                            GeneralController.getInventoryItem(Integer.parseInt(ingresarCodigoTextField.getText()));
+                    InventoryItem aux = GeneralController.getInventoryItem(Integer.parseInt(ingresarCodigoTextField.getText()));
                     if (aux != null) ingresarProducto(aux);
                 }
             }
@@ -169,106 +272,6 @@ public class PedidosFrame extends WindowFrame {
             @Override
             public void windowOpened(WindowEvent e) {
                 ingresarCodigoTextField.requestFocus();
-            }
-        });
-        cerrarClienteButton.addActionListener((ActionEvent e) -> {
-            boolean            valid               = false;
-            JPanel             panel               = new JPanel(new GridBagLayout()); //SpringLayout
-            GridBagConstraints gridBagConstraints  = new GridBagConstraints();
-            JLabel             totalLabel          = new JLabel("Total:  ");
-            JTextField         totalTextField      = new JTextField(10);
-            JLabel             pagoLabel           = new JLabel("Pago:   ");
-            JTextField         pagoTextField       = new JTextField(10);
-            JLabel             devolutionLabel     = new JLabel("Devol:  ");
-            JTextField         devolutionTextField = new JTextField(10);
-
-            totalTextField.setText(NumberFormat.getNumberInstance(Locale.GERMAN).format(cliente.getConsumption()));
-            long a, b;
-            try {
-                a = (long) NumberFormat.getNumberInstance(Locale.GERMAN).parse(pagoTextField.getText());
-            } catch (ParseException ex) {
-                a = 0;
-            }
-            b = (int) cliente.getConsumption();
-            totalTextField.setText(NumberFormat.getNumberInstance(Locale.GERMAN).format(b));
-            pagoTextField.setText(NumberFormat.getNumberInstance(Locale.GERMAN).format(a));
-            devolutionTextField.setText(NumberFormat.getNumberInstance(Locale.GERMAN).format(a - b));
-
-            gridBagConstraints.fill = GridBagConstraints.VERTICAL;
-            gridBagConstraints.gridx = 0;
-            gridBagConstraints.gridy = 1;
-            panel.add(totalLabel, gridBagConstraints);
-            gridBagConstraints.gridx = 1;
-            gridBagConstraints.gridy = 1;
-            panel.add(totalTextField, gridBagConstraints);
-            gridBagConstraints.gridx = 0;
-            gridBagConstraints.gridy = 2;
-            panel.add(pagoLabel, gridBagConstraints);
-            gridBagConstraints.gridx = 1;
-            gridBagConstraints.gridy = 2;
-            panel.add(pagoTextField, gridBagConstraints);
-            gridBagConstraints.gridx = 0;
-            gridBagConstraints.gridy = 3;
-            panel.add(devolutionLabel, gridBagConstraints);
-            gridBagConstraints.gridx = 1;
-            gridBagConstraints.gridy = 3;
-            panel.add(devolutionTextField, gridBagConstraints);
-
-            totalTextField.setEditable(false);
-            devolutionTextField.setEditable(false);
-            AbstractAction abstractAction = new AbstractAction() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    long a, b;
-                    try {
-                        a = (long) NumberFormat.getNumberInstance(Locale.GERMAN).parse(pagoTextField.getText());
-                    } catch (ParseException ex) {
-                        a = 0;
-                    }
-                    b = (int) cliente.getConsumption();
-                    totalTextField.setText(NumberFormat.getNumberInstance(Locale.GERMAN).format(b));
-                    pagoTextField.setText(NumberFormat.getNumberInstance(Locale.GERMAN).format(a));
-                    devolutionTextField.setText(NumberFormat.getNumberInstance(Locale.GERMAN).format(a - b));
-                }
-            };
-            for (int i = 48; i < 58; i++)
-                pagoTextField.getInputMap().put(KeyStroke.getKeyStroke(i, 0, true), abstractAction);
-            for (int i = 96; i < 106; i++)
-                pagoTextField.getInputMap().put(KeyStroke.getKeyStroke(i, 0, true), abstractAction);
-            pagoTextField.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, 0, true), abstractAction);
-
-            String[] options = new String[]{"Ok", "Factura", "Cancel"};
-            int option = JOptionPane.showOptionDialog(null,
-                                                      panel,
-                                                      cliente.getIdentifier(),
-                                                      JOptionPane.YES_NO_CANCEL_OPTION,
-                                                      JOptionPane.PLAIN_MESSAGE,
-                                                      null,
-                                                      options,
-                                                      options[0]);
-            switch (option) {
-                case 0:
-                    bill = GeneralController.saveBill(cliente);
-                    setPedidoListLabelAndButtons();
-                    ingresarCodigoTextField.setText("");
-                    cerrarClienteButton.setEnabled(false);
-                    notificarCocinaButton.setEnabled(false);
-                    clientePanel.setVisible(true);
-                    consoleAppend("<<" + cliente.getIdentifier() + " Cerrada>> Consumo: " + bill.getConsumption());
-                    break;
-                case 1:
-                    bill = GeneralController.printBill(cliente);
-                    setPedidoListLabelAndButtons();
-                    ingresarCodigoTextField.setText("");
-                    cerrarClienteButton.setEnabled(false);
-                    notificarCocinaButton.setEnabled(false);
-                    clientePanel.setVisible(true);
-                    consoleAppend("<<" + cliente.getIdentifier() + " Cerrada>> Consumo: " + bill.getConsumption());
-                    break;
-                default:
-                    setPedidoListLabelAndButtons();
-                    ingresarCodigoTextField.setText("");
-                    break;
             }
         });
         notificarCocinaButton.addActionListener((ActionEvent e) -> {

@@ -10,11 +10,13 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.UUID;
 
+@SuppressWarnings("unchecked")
 public class StarterWindow implements Runnable {
 
     @Override
     public void run() {
         boolean started = false;
+        System.out.println("[FRONTEND] Starting");
         do {
             try {
                 for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
@@ -24,21 +26,19 @@ public class StarterWindow implements Runnable {
                         break;
                     }
                 }
-            } catch (ClassNotFoundException |
-                    InstantiationException |
-                    IllegalAccessException |
-                    javax.swing.UnsupportedLookAndFeelException ex) {
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
                 String mess = "Ha Ocurrido un error Iniciando el programa: \n";
                 mess += "Error: " + ex.getMessage();
                 JOptionPane.showMessageDialog(null, mess);
                 started = false;
-                java.util.logging.Logger.getLogger(
-                        PedidosFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+                java.util.logging.Logger.getLogger(PedidosFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
             }
         } while (!started);
 
+        System.out.println("[FRONTEND] Waiting to Spring Ready");
         while (!GeneralController.springReady) {
         }
+        System.out.println("[FRONTEND] Spring Ready");
 
         Site site = null;
         site = searchSite();
@@ -46,6 +46,7 @@ public class StarterWindow implements Runnable {
         if (site != null) {
             MainFrame window = new MainFrame();
             window.repaint();
+            System.out.println("[FRONTEND] Finished");
         } else {
             createSite();
         }
@@ -53,14 +54,15 @@ public class StarterWindow implements Runnable {
     }
 
     private Site searchSite() {
+        System.out.println("[FRONTEND] Searching Site");
         LocalSettings localSettings = new LocalSettings();
         UUID          site_id;
         Site          site;
         try {
             site_id = UUID.fromString(localSettings.getProperty("site_id"));
             site = GeneralController.getSite(site_id);
+            System.out.println("[FRONTEND] Site Founded");
         } catch (NullPointerException e) {
-            System.out.println("Creation Failed:\n" + e);
             site_id = null;
             site = null;
         }
@@ -71,15 +73,14 @@ public class StarterWindow implements Runnable {
     }
 
     private void createSite() {
+        System.out.println("[FRONTEND] Creating Site");
         JFrame jFrame = new JFrame("Create Site");
         jFrame.setContentPane(new CreateSiteForm().getPanel1());
         jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         jFrame.pack();
         Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-        jFrame.setLocation(
-                dim.width / 2 - jFrame.getSize().width / 2,
-                dim.height / 2 - jFrame.getSize().height / 2);
+        jFrame.setLocation(dim.width / 2 - jFrame.getSize().width / 2, dim.height / 2 - jFrame.getSize().height / 2);
         jFrame.setVisible(true);
     }
 }

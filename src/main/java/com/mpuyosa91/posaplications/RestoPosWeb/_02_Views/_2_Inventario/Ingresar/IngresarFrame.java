@@ -136,6 +136,7 @@ public class IngresarFrame extends WindowFrame {
         cargarButton = new JButton("Cargar");
         atrasButton = new JButton("Atras");
         borrarButton = new JButton("Borrar");
+        borrarButton.setEnabled(false);
         atrasButtonListItemPanel = new JButton("Atras");
         borrarButtonListItemPanel = new JButton("Borrar");
         singleItemScroll = new JScrollPane();

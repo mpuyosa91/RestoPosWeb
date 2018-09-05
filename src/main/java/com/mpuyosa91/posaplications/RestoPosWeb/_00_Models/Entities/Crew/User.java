@@ -40,12 +40,14 @@ public class User {
     private Integer      documentNumber;
 
     public void updateFromUser(User user) {
-        if (user.role != null) this.role = user.role;
-        if (user.sites != null) this.sites.addAll(user.sites);
+//        if (user.role != null) this.role = user.role;
+//        if (user.sites != null) this.sites.addAll(user.sites);
         if (user.firstName != null) this.firstName = user.firstName;
         if (user.lastName != null) this.lastName = user.lastName;
-        if (user.username != null) this.username = user.lastName;
-        if (user.password != null) this.password = user.password;
+        if (user.username != null) this.username = user.username;
+        if (user.documentType != null) this.documentType = user.documentType;
+        if (user.documentNumber != null) this.documentNumber = user.documentNumber;
+//        if (user.password != null) this.password = user.password;
         if (user.email != null) this.email = user.email;
     }
 
@@ -156,5 +158,28 @@ public class User {
                 ", documentType=" + documentType +
                 ", documentNumber=" + documentNumber +
                 '}';
+    }
+
+    public String toConsole() {
+        return "id=" +
+               id +
+               ", \nenabled=" +
+               enabled +
+               ", \nfirstName='" +
+               firstName +
+               '\'' +
+               ", \nlastName='" +
+               lastName +
+               '\'' +
+               ", \nusername='" +
+               username +
+               '\'' +
+               ", \nemail='" +
+               email +
+               '\'' +
+               ", \ndocumentType=" +
+               documentType +
+               ", \ndocumentNumber=" +
+               documentNumber;
     }
 }

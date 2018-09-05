@@ -37,12 +37,10 @@ public class GeneralController {
     public static void createSite(Site site) {
         String host = localSettings.getProperty("host");
         String port = localSettings.getProperty("port");
-        UUID site_id = restTemplate.exchange(
-                "http://" + host + ":" + port + "/site/",
-                HttpMethod.POST,
-                new HttpEntity<>(site, headers),
-                UUID.class
-        ).getBody();
+        UUID site_id = restTemplate.exchange("http://" + host + ":" + port + "/site/",
+                                             HttpMethod.POST,
+                                             new HttpEntity<>(site, headers),
+                                             UUID.class).getBody();
         assert site_id != null;
         localSettings.setProperty("site_id", site_id.toString());
     }
@@ -51,13 +49,15 @@ public class GeneralController {
         String host = localSettings.getProperty("host");
         String port = localSettings.getProperty("port");
         try {
-            site = restTemplate.getForObject(
-                    "http://" + host + ":" + port + "/site/" + site_id.toString(),
-                    Site.class
-            );
+            site = restTemplate.getForObject("http://" + host + ":" + port + "/site/" + site_id.toString(), Site.class);
         } catch (RestClientException ignored) {
+            System.out.println(ignored);
             site = null;
         }
+        return site;
+    }
+
+    public static Site getSite() {
         return site;
     }
 
@@ -68,19 +68,22 @@ public class GeneralController {
     public static void createInventoryItem(InventoryItem inventoryItem) {
         String host = localSettings.getProperty("host");
         String port = localSettings.getProperty("port");
-        restTemplate.postForObject(
-                "http://" + host + ":" + port + "/site/" + site.getId() + "/create-inventory-item",
-                inventoryItem,
-                UUID.class);
+        restTemplate.postForObject("http://" + host + ":" + port + "/site/" + site.getId() + "/create-inventory-item",
+                                   inventoryItem,
+                                   UUID.class);
     }
 
     public static void updateInventoryItem(InventoryItem inventoryItem) {
         String host = localSettings.getProperty("host");
         String port = localSettings.getProperty("port");
-        restTemplate.put(
-                "http://" + host + ":" + port + "/site/" + site.getId() + "/update-inventory-item/" + inventoryItem.getId(),
-                inventoryItem,
-                InventoryItem.class);
+        restTemplate.put("http://" +
+                         host +
+                         ":" +
+                         port +
+                         "/site/" +
+                         site.getId() +
+                         "/update-inventory-item/" +
+                         inventoryItem.getId(), inventoryItem, InventoryItem.class);
     }
 
     public static InventoryItem getRootInventoryItem(InventoryItem.Type clase) {
@@ -105,9 +108,14 @@ public class GeneralController {
     public static InventoryItem getInventoryItem(int serial) {
         String host = localSettings.getProperty("host");
         String port = localSettings.getProperty("port");
-        InventoryItem aux = restTemplate.getForObject(
-                "http://" + host + ":" + port + "/inventory_item/" + site.getId() + "/" + serial,
-                InventoryItem.class);
+        InventoryItem aux = restTemplate.getForObject("http://" +
+                                                      host +
+                                                      ":" +
+                                                      port +
+                                                      "/inventory_item/" +
+                                                      site.getId() +
+                                                      "/" +
+                                                      serial, InventoryItem.class);
         return aux;
     }
 
@@ -121,7 +129,7 @@ public class GeneralController {
         min_serial = father_serial * multiplier;
         limit_serial = (father_serial + 1) * multiplier;
 
-        ArrayList<InventoryItem> childList = getChildes(getInventoryItem(father_serial));
+        ArrayList<InventoryItem> childList = getAllChildes(getInventoryItem(father_serial));
 
         do {
             min_serial += 1;
@@ -147,28 +155,66 @@ public class GeneralController {
         ArrayList<InventoryItem> inventoryItems = new ArrayList<>();
 
         try {
-            jsonNode = restTemplate.getForObject(
-                    "http://" + host + ":" + port + "/inventory_item/"
-                            + site.getId() + "/" + inventoryItem.getSerial() + "/childes",
-                    JsonNode.class);
+            jsonNode = restTemplate.getForObject("http://" +
+                                                 host +
+                                                 ":" +
+                                                 port +
+                                                 "/inventory_item/" +
+                                                 site.getId() +
+                                                 "/" +
+                                                 inventoryItem.getSerial() +
+                                                 "/childes", JsonNode.class);
         } catch (NullPointerException | HttpServerErrorException ignored) {
             return inventoryItems;
         }
 
+        inventoryItems = getInventoryItems(jsonNode, inventoryItems);
+
+        inventoryItems.sort(Comparator.comparingInt(InventoryItem::getSerial));
+
+        return inventoryItems;
+    }
+
+    public static ArrayList<InventoryItem> getAllChildes(InventoryItem inventoryItem) {
+        String host = localSettings.getProperty("host");
+        String port = localSettings.getProperty("port");
+
+        JsonNode                 jsonNode;
+        ArrayList<InventoryItem> inventoryItems = new ArrayList<>();
+
+        try {
+            jsonNode = restTemplate.getForObject("http://" +
+                                                 host +
+                                                 ":" +
+                                                 port +
+                                                 "/inventory_item/" +
+                                                 site.getId() +
+                                                 "/" +
+                                                 inventoryItem.getSerial() +
+                                                 "/all_childes", JsonNode.class);
+        } catch (NullPointerException | HttpServerErrorException ignored) {
+            return inventoryItems;
+        }
+
+        inventoryItems = getInventoryItems(jsonNode, inventoryItems);
+
+        inventoryItems.sort(Comparator.comparingInt(InventoryItem::getSerial));
+
+        return inventoryItems;
+    }
+
+    private static ArrayList<InventoryItem> getInventoryItems(JsonNode jsonNode,
+                                                              ArrayList<InventoryItem> inventoryItems) {
         if (jsonNode != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             try {
-                inventoryItems = objectMapper.readValue(
-                        objectMapper.treeAsTokens(jsonNode),
-                        new TypeReference<ArrayList<InventoryItem>>() {
-                        });
+                inventoryItems = objectMapper.readValue(objectMapper.treeAsTokens(jsonNode),
+                                                        new TypeReference<ArrayList<InventoryItem>>() {
+                                                        });
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-
-        inventoryItems.sort(Comparator.comparingInt(InventoryItem::getSerial));
-
         return inventoryItems;
     }
 
@@ -176,10 +222,15 @@ public class GeneralController {
         String host = localSettings.getProperty("host");
         String port = localSettings.getProperty("port");
 
-        InventoryItem father = restTemplate.getForObject(
-                "http://" + host + ":" + port + "/inventory_item/" + site.getId() +
-                        "/" + inventoryItem.getSerial() + "/father",
-                InventoryItem.class);
+        InventoryItem father = restTemplate.getForObject("http://" +
+                                                         host +
+                                                         ":" +
+                                                         port +
+                                                         "/inventory_item/" +
+                                                         site.getId() +
+                                                         "/" +
+                                                         inventoryItem.getSerial() +
+                                                         "/father", InventoryItem.class);
 
         return father;
     }
@@ -192,6 +243,15 @@ public class GeneralController {
         return treeToString(tree, "", 0);
     }
 
+    public static String treeToString(Set<User> tree) {
+        StringBuilder r = new StringBuilder();
+        for (User user : tree) {
+            r.append(user.getUsername()).append(": ").append(user.getFirstName()).append(" ").append(user.getLastName()).append(
+                    ". ");
+        }
+        return r.toString();
+    }
+
     public static boolean addItemToCustomer(ICustomer cliente, User user, InventoryItem item, String notes) {
 
         Customer customer = (Customer) cliente;
@@ -202,10 +262,14 @@ public class GeneralController {
         addItemToCustomer.put("item", item.getId().toString());
         addItemToCustomer.put("notes", notes);
 
-        restTemplate.put(
-                "http://" + host + ":" + port + "/customer/" + customer.getId() + "/user_add_item/" + user.getId(),
-                addItemToCustomer,
-                ResponseEntity.class);
+        restTemplate.put("http://" +
+                         host +
+                         ":" +
+                         port +
+                         "/customer/" +
+                         customer.getId() +
+                         "/user_add_item/" +
+                         user.getId(), addItemToCustomer, ResponseEntity.class);
 
         return true;
     }
@@ -216,10 +280,14 @@ public class GeneralController {
         String   host     = localSettings.getProperty("host");
         String   port     = localSettings.getProperty("port");
 
-        restTemplate.put(
-                "http://" + host + ":" + port + "/customer/" + customer.getId() + "/user_add_salable/" + user.getId(),
-                salableItem,
-                ResponseEntity.class);
+        restTemplate.put("http://" +
+                         host +
+                         ":" +
+                         port +
+                         "/customer/" +
+                         customer.getId() +
+                         "/user_add_salable/" +
+                         user.getId(), salableItem, ResponseEntity.class);
 
         return true;
     }
@@ -228,9 +296,14 @@ public class GeneralController {
         String host = localSettings.getProperty("host");
         String port = localSettings.getProperty("port");
 
-        restTemplate.put(
-                "http://" + host + ":" + port + "/customer/" + customer.getId() + "/remove_salable/" + salableItem.getId(),
-                ResponseEntity.class);
+        restTemplate.put("http://" +
+                         host +
+                         ":" +
+                         port +
+                         "/customer/" +
+                         customer.getId() +
+                         "/remove_salable/" +
+                         salableItem.getId(), ResponseEntity.class);
 
     }
 
@@ -250,28 +323,76 @@ public class GeneralController {
         String host = localSettings.getProperty("host");
         String port = localSettings.getProperty("port");
 
-        return restTemplate.getForObject(
-                "http://" + host + ":" + port + "/site/" + site.getId().toString() +
-                        "/search-user-by-username/" + username,
-                User.class
-        );
+        return restTemplate.getForObject("http://" +
+                                         host +
+                                         ":" +
+                                         port +
+                                         "/site/" +
+                                         site.getId().toString() +
+                                         "/search-user-by-username/" +
+                                         username, User.class);
+    }
+
+    public static void createUser(User user) {
+        String host = localSettings.getProperty("host");
+        String port = localSettings.getProperty("port");
+
+        System.out.println("createUser: " + user);
+
+        restTemplate.postForObject("http://" + host + ":" + port + "/site/" + site.getId() + "/create_user",
+                                   user,
+                                   ResponseEntity.class);
+
+    }
+
+    public static void updateUser(User user) {
+        String host = localSettings.getProperty("host");
+        String port = localSettings.getProperty("port");
+
+        System.out.println("updateUser: " + user);
+
+        restTemplate.put("http://" + host + ":" + port + "/site/" + site.getId() + "/update_user/" + user.getId(),
+                         user);
     }
 
     //--------------------------------------------------------------------------------------------------
     //                                            Customers
     //--------------------------------------------------------------------------------------------------
 
+    public static void openCustomer(Customer customer) {
+        String host = localSettings.getProperty("host");
+        String port = localSettings.getProperty("port");
+
+        restTemplate.put("http://" + host + ":" + port + "/customer/" + customer.getId() + "/open", Bill.class);
+    }
+
+    public static void closeCustomer(Customer customer) {
+
+        String host = localSettings.getProperty("host");
+        String port = localSettings.getProperty("port");
+
+        Map<String, UUID> sendToKitchen = new HashMap<>();
+        sendToKitchen.put("pos", UUID.randomUUID());
+
+        restTemplate.put("http://" + host + ":" + port + "/customer/" + customer.getId() + "/close",
+                         sendToKitchen,
+                         Bill.class);
+    }
+
     public static Customer getCustomer(UUID customer_id) {
         String host = localSettings.getProperty("host");
         String port = localSettings.getProperty("port");
 
-        Customer customer = restTemplate.getForObject(
-                "http://" + host + ":" + port + "/customer/" + customer_id,
-                Customer.class);
+        Customer customer = restTemplate.getForObject("http://" + host + ":" + port + "/customer/" + customer_id,
+                                                      Customer.class);
 
-        Site customer_site = restTemplate.getForObject(
-                "http://" + host + ":" + port + "/customer/" + customer_id + "/get_site_of",
-                Site.class);
+        Site customer_site = restTemplate.getForObject("http://" +
+                                                       host +
+                                                       ":" +
+                                                       port +
+                                                       "/customer/" +
+                                                       customer_id +
+                                                       "/get_site_of", Site.class);
 
         customer.setSite(customer_site);
 
@@ -290,8 +411,21 @@ public class GeneralController {
     //                                              Bills
     //--------------------------------------------------------------------------------------------------
 
-    public static Bill saveBill(ICustomer customer) {
-        return null;
+    public static Bill saveBill(ICustomer cliente) {
+        Customer customer = (Customer) cliente;
+        String   host     = localSettings.getProperty("host");
+        String   port     = localSettings.getProperty("port");
+
+        GeneralController.closeCustomer(customer);
+
+        Bill bill = restTemplate.getForObject("http://" +
+                                              host +
+                                              ":" +
+                                              port +
+                                              "/bill/" +
+                                              customer.getCurrentBill().getId(), Bill.class);
+
+        return bill;
     }
 
     public static void delete(InventoryItem inventoryItem) {
@@ -303,6 +437,17 @@ public class GeneralController {
     }
 
     public static boolean sendToKitchen(ICustomer cliente) {
+        Customer customer = (Customer) cliente;
+        String   host     = localSettings.getProperty("host");
+        String   port     = localSettings.getProperty("port");
+
+        Map<String, UUID> sendToKitchen = new HashMap<>();
+        sendToKitchen.put("kitchen", UUID.randomUUID());
+
+        restTemplate.put("http://" + host + ":" + port + "/customer/" + customer.getId() + "/sent_to_kitchen",
+                         sendToKitchen,
+                         ResponseEntity.class);
+
         return true;
     }
 
@@ -323,21 +468,19 @@ public class GeneralController {
 
     private static String getDescription(InventoryItem inventoryItem) {
         String r;
-        if (inventoryItem.isFinal_item())
-            r = "<" + inventoryItem.getSerial() + "> " + inventoryItem.getName() + " $" + String.valueOf((int) inventoryItem.getPrice());
-        else
-            r = "<" + inventoryItem.getSerial() + "> " + inventoryItem.getName() + ":";
+        if (inventoryItem.isFinal_item()) r = "<" +
+                                              inventoryItem.getSerial() +
+                                              "> " +
+                                              inventoryItem.getName() +
+                                              " $" +
+                                              String.valueOf((int) inventoryItem.getPrice());
+        else r = "<" + inventoryItem.getSerial() + "> " + inventoryItem.getName() + ":";
         return r;
     }
 
     public enum Label {
-        NroMesas(10),
-        ConsecutivoFacturas(1),
-        ConsecutivoExterno(6),
-        FechaUltimaFactura(20170101),
-        ConsecutivoComandas(1),
-        ClienteExternoAutent(4733),
-        TurnoActual(1);
+        NroMesas(10), ConsecutivoFacturas(1), ConsecutivoExterno(6), FechaUltimaFactura(20170101), ConsecutivoComandas(1), ClienteExternoAutent(
+                4733), TurnoActual(1);
 
         private final int value;
 
@@ -369,9 +512,7 @@ public class GeneralController {
 
         @Override
         public String toString() {
-            return "InventoryItemList{" +
-                    "inventoryItems=" + inventoryItems +
-                    '}';
+            return "InventoryItemList{" + "inventoryItems=" + inventoryItems + '}';
         }
     }
 }

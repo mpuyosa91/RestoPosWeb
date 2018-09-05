@@ -8,6 +8,7 @@ package com.mpuyosa91.posaplications.RestoPosWeb._02_Views;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.SettingsAndProperties.LocalSettings;
 import com.mpuyosa91.posaplications.RestoPosWeb._02_Views._1_Pedidos.PedidosPanel;
 import com.mpuyosa91.posaplications.RestoPosWeb._02_Views._2_Inventario.InventarioPanel;
+import com.mpuyosa91.posaplications.RestoPosWeb._02_Views._3_Personal.PersonalPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -30,8 +31,8 @@ public class MainFrame extends JFrame {
     private      JPanel          mainPanel;
     private      PedidosPanel    panelPedidos;
     private      InventarioPanel panelInventario;
+    private      PersonalPanel   panelPersonal;
 //    private      VentasPanel        panelVentas;
-//    private      PersonalPanel      panelPersonal;
     //private EstadisticasPanel panelEstadisticas;
 //    private      ConfiguracionPanel panelConfiguracion;
 
@@ -62,8 +63,8 @@ public class MainFrame extends JFrame {
         panelPedidos.setLayout(null);
         panelInventario = new InventarioPanel(this);
         panelInventario.setLayout(null);
-//        panelPersonal = new PersonalPanel(this);
-//        panelPersonal.setLayout(null);
+        panelPersonal = new PersonalPanel(this);
+        panelPersonal.setLayout(null);
 //        panelVentas = new VentasPanel();
 //        panelVentas.setLayout(null);
 //        panelEstadisticas   = new EstadisticasPanel(this)       panelEstadisticas.setLayout(null);
@@ -72,7 +73,7 @@ public class MainFrame extends JFrame {
 
         panelPedidos.setVisible(false);
         panelInventario.setVisible(false);
-//        panelPersonal.setVisible(false);
+        panelPersonal.setVisible(false);
 //        panelVentas.setVisible(false);
 //        panelEstadisticas.setVisible(false);
 //        panelConfiguracion.setVisible(false);
@@ -80,15 +81,15 @@ public class MainFrame extends JFrame {
         this.add(mainPanel);
         this.add(panelPedidos);
         this.add(panelInventario);
-//        this.add(panelPersonal);
+        this.add(panelPersonal);
 //        this.add(panelVentas);
         //this.add(panelEstadisticas);
         //this.add(panelConfiguracion);
 
         panelPedidos.setBounds(0, 0, this.horizontalSeparation, this.ySize);
         panelInventario.setBounds(0, 0, this.horizontalSeparation, this.ySize);
-/*        panelPersonal.setBounds(0, 0, this.horizontalSeparation, this.ySize);
-        panelVentas.setBounds(0, 0, this.horizontalSeparation, this.ySize);*/
+        panelPersonal.setBounds(0, 0, this.horizontalSeparation, this.ySize);
+        /*        panelVentas.setBounds(0, 0, this.horizontalSeparation, this.ySize);*/
         //panelEstadisticas.setBounds (   0                           ,   0   ,  this.horizontalSeparation  ,   this.ySize   );
         //panelConfiguracion.setBounds(0, 0, this.horizontalSeparation, this.ySize);
         mainPanel.setBounds(this.horizontalSeparation, 0, this.horizontalSeparation, this.ySize);
@@ -103,7 +104,7 @@ public class MainFrame extends JFrame {
         btnConfiguracion.setBackground(Color.lightGray);
         panelPedidos.show_hide(false);
         panelInventario.setVisible(false);
-        //panelPersonal.setVisible(false);
+        panelPersonal.setVisible(false);
         //panelVentas.setVisible(false);
         //panelEstadisticas.setVisible(false);
         //panelConfiguracion.setVisible(false);
@@ -118,7 +119,7 @@ public class MainFrame extends JFrame {
                 break;
             case 3:
                 btnPersonal.setBackground(Color.darkGray);
-                //panelPersonal.setVisible(true);
+                panelPersonal.setVisible(true);
                 break;
             case 4:
                 btnVentas.setBackground(Color.darkGray);
@@ -159,7 +160,7 @@ public class MainFrame extends JFrame {
         btnConfiguracion.setBounds(initialX, initialY + (5 * spaceY), width, height);
         btnPedidos.setEnabled(true);
         btnInventario.setEnabled(true);
-        btnPersonal.setEnabled(false);
+        btnPersonal.setEnabled(true);
         btnVentas.setEnabled(false);
         btnEstadisticas.setEnabled(false);
         btnConfiguracion.setEnabled(false);

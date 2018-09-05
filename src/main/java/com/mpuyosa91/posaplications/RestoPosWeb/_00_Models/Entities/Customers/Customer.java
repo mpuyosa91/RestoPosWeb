@@ -46,11 +46,9 @@ public class Customer implements ICustomer {
     @OneToOne(cascade = {CascadeType.ALL})
     @JoinColumn(name = "current_bill_id")
     private Bill    currentBill;
-    private double  consumption;
     private int     orderNum = 1;
 
     Customer() {
-        consumption = calculateConsumption();
         orderNum = 1;
     }
 
@@ -83,10 +81,12 @@ public class Customer implements ICustomer {
             String        host          = localSettings.getProperty("host");
             String        port          = localSettings.getProperty("port");
 
-            Integer consecutive = restTemplate.getForObject(
-                    "http://" + host + ":" + port + "/bill/consecutive/" + site.getId(),
-                    Integer.class
-            );
+            Integer consecutive = restTemplate.getForObject("http://" +
+                                                            host +
+                                                            ":" +
+                                                            port +
+                                                            "/bill/consecutive/" +
+                                                            site.getId(), Integer.class);
 
             Bill bill = new Bill();
             if (consecutive != null && consecutive > 0) bill.setConsecutive(consecutive);
@@ -101,7 +101,6 @@ public class Customer implements ICustomer {
         salableItem.setUser(user);
         salableItem.setCustomer(this);
         itemListUnBilled.add(salableItem);
-        consumption = getPreConsumption();
         return salableItem;
 
     }
@@ -123,14 +122,12 @@ public class Customer implements ICustomer {
             itemListUnBilled = new HashSet<>();
 
         }
-        consumption = getPreConsumption();
     }
 
     public boolean removeItem(SalableItem item) {
         boolean r;
         try {
             itemListUnBilled.remove(item);
-            consumption = getPreConsumption();
             r = true;
         } catch (IndexOutOfBoundsException ignored) {
             r = false;
@@ -140,19 +137,16 @@ public class Customer implements ICustomer {
     }
 
     public Set<SalableItem> getItemListUnBilled() {
-        if (itemListUnBilled == null)
-            this.setItemListUnBilled(new HashSet<>());
+        if (itemListUnBilled == null) this.setItemListUnBilled(new HashSet<>());
         return itemListUnBilled;
     }
 
     public void setItemListUnBilled(Set<SalableItem> itemListUnBilled) {
         this.itemListUnBilled = itemListUnBilled;
-        consumption = getPreConsumption();
     }
 
     public Set<SalableItem> getItemListBilled() {
-        if (itemListBilled == null)
-            this.setItemListBilled(new HashSet<>());
+        if (itemListBilled == null) this.setItemListBilled(new HashSet<>());
         return itemListBilled;
     }
 
@@ -167,14 +161,14 @@ public class Customer implements ICustomer {
     public Bill evacuate() {
         if (itemListUnBilled.isEmpty()) {
             for (SalableItem item : itemListBilled) {
-                if (!item.isDelivered())
-                    item.setDelivered(true);
-                if (item.getReadyTime() == null)
-                    item.setReadyTime(Calendar.getInstance());
-                if (item.getDeliveryTime() == null)
-                    item.setDeliveryTime(Calendar.getInstance());
+                if (!item.isDelivered()) item.setDelivered(true);
+                if (item.getReadyTime() == null) item.setReadyTime(Calendar.getInstance());
+                if (item.getDeliveryTime() == null) item.setDeliveryTime(Calendar.getInstance());
             }
             currentBill.setDateTimeFinal(Calendar.getInstance());
+            long duration = currentBill.getDateTimeFinal().getTimeInMillis() -
+                            currentBill.getDateTimeStart().getTimeInMillis();
+            currentBill.setDuration(duration);
             return currentBill;
         } else {
             return null;
@@ -183,27 +177,24 @@ public class Customer implements ICustomer {
 
     public Calendar getDateTimeFinal() {
         Calendar r = null;
-        if (getCurrentBill() != null)
-            r = currentBill.getDateTimeFinal();
+        if (getCurrentBill() != null) r = currentBill.getDateTimeFinal();
         return r;
     }
 
     public Calendar getDateTimeStart() {
         Calendar r = null;
-        if (getCurrentBill() != null)
-            r = currentBill.getDateTimeStart();
+        if (getCurrentBill() != null) r = currentBill.getDateTimeStart();
         return r;
     }
 
     public long getDurationInSeconds() {
         long r = 0;
-        if (getCurrentBill() != null)
-            r = currentBill.getDurationInSeconds();
+        if (getCurrentBill() != null) r = currentBill.getDurationInSeconds();
         return r;
     }
 
     public double getConsumption() {
-        return consumption;
+        return getPreConsumption();
     }
 
     public double getPreConsumption() {
@@ -220,7 +211,6 @@ public class Customer implements ICustomer {
 
     public void setItemListBilled(Set<SalableItem> itemListBilled) {
         this.itemListBilled = itemListBilled;
-        consumption = getPreConsumption();
     }
 
     public void clean() {
@@ -255,18 +245,28 @@ public class Customer implements ICustomer {
     @Override
     public String toString() {
         return "Customer{" +
-                "position_row=" + position_row +
-                ", position_col=" + position_col +
-                ", itemListBilled=" + itemListBilled.size() +
-                ", itemListUnBilled=" + itemListUnBilled.size() +
-                ", identifier='" + identifier + '\'' +
-                ", id=" + id +
-                ", site=" + site.getId() +
-                ", enabled=" + enabled +
-                ", currentBill=" + currentBill +
-                ", consumption=" + consumption +
-                ", orderNum=" + orderNum +
-                '}';
+               "position_row=" +
+               position_row +
+               ", position_col=" +
+               position_col +
+               ", itemListBilled=" +
+               itemListBilled.size() +
+               ", itemListUnBilled=" +
+               itemListUnBilled.size() +
+               ", identifier='" +
+               identifier +
+               '\'' +
+               ", id=" +
+               id +
+               ", site=" +
+               site.getId() +
+               ", enabled=" +
+               enabled +
+               ", currentBill=" +
+               currentBill +
+               ", orderNum=" +
+               orderNum +
+               '}';
     }
 
     public Integer getPosition_row() {
@@ -287,8 +287,7 @@ public class Customer implements ICustomer {
 
     private double calculateConsumption() {
         double r = 0;
-        if (getCurrentBill() != null)
-            r = getCurrentBill().calculateConsumption();
+        if (getCurrentBill() != null) r = getCurrentBill().calculateConsumption();
         return r;
     }
 }
