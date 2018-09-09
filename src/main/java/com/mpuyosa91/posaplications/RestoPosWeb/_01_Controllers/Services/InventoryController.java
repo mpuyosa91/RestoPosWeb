@@ -36,7 +36,6 @@ public class InventoryController {
     @PostMapping(path = "/")
     public @ResponseBody
     InventoryItem create(@RequestBody InventoryItem inventoryItem) {
-        System.out.println(inventoryItem.toString());
         return inventoryRepository.save(inventoryItem);
     }
 

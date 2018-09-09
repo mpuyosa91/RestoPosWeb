@@ -11,9 +11,12 @@ import java.awt.*;
 import java.util.UUID;
 
 @SuppressWarnings("unchecked")
-public class StarterWindow implements Runnable {
+public class StarterWindow {
 
-    @Override
+    public StarterWindow() {
+
+    }
+
     public void run() {
         boolean started = false;
         System.out.println("[FRONTEND] Starting");

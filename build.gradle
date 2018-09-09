@@ -38,19 +38,27 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    compile("org.springframework.boot:spring-boot-starter-web")
-
-    // Spring Security
-    //compile 'org.springframework.boot:spring-boot-starter-security'
 
     // JPA Data (We are going to use Repositories, Entities, Hibernate, etc...)
     compile 'org.springframework.boot:spring-boot-starter-data-jpa'
 
+    //Desactivar en Produccion Herramientas de desarrollo
+    //compile 'org.springframework.boot:spring-boot-devtools'
+
+    compile 'org.springframework.boot:spring-boot-starter-data-rest'
+
+    compile 'org.springframework.boot:spring-boot-starter-web'
+
+    //runtimeClasspath 'com.h2database:h2'
+
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
+
+    testCompile 'org.springframework.restdocs:spring-restdocs-mockmvc'
+
+    // Spring Security
+    //compile 'org.springframework.boot:spring-boot-starter-security'
+
     // Use MySQL Connector-J
     compile 'mysql:mysql-connector-java'
 
-    // https://mvnrepository.com/artifact/org.postgresql/postgresql
-    //compile group: 'org.postgresql', name: 'postgresql', version: '42.1.4'
-
-    testCompile('org.springframework.boot:spring-boot-starter-test')
 }

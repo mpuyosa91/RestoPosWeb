@@ -51,7 +51,7 @@ public class GeneralController {
         try {
             site = restTemplate.getForObject("http://" + host + ":" + port + "/site/" + site_id.toString(), Site.class);
         } catch (RestClientException ignored) {
-            System.out.println(ignored);
+            System.out.println("RestClientException: " + ignored);
             site = null;
         }
         return site;
