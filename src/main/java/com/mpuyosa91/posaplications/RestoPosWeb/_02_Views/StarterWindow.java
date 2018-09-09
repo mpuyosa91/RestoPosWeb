@@ -77,13 +77,18 @@ public class StarterWindow {
 
     private void createSite() {
         System.out.println("[FRONTEND] Creating Site");
-        JFrame jFrame = new JFrame("Create Site");
-        jFrame.setContentPane(new CreateSiteForm().getPanel1());
-        jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        try {
+            JFrame jFrame = new JFrame("Create Site");
+            CreateSiteForm createSiteForm = new CreateSiteForm();
+            jFrame.setContentPane(createSiteForm.getPanel1());
+            jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        jFrame.pack();
-        Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-        jFrame.setLocation(dim.width / 2 - jFrame.getSize().width / 2, dim.height / 2 - jFrame.getSize().height / 2);
-        jFrame.setVisible(true);
+            jFrame.pack();
+            Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+            jFrame.setLocation(dim.width / 2 - jFrame.getSize().width / 2, dim.height / 2 - jFrame.getSize().height / 2);
+            jFrame.setVisible(true);
+        } catch (NullPointerException e){
+            System.out.println("[FRONTEND] Error al crear el Formulario.");
+        }
     }
 }

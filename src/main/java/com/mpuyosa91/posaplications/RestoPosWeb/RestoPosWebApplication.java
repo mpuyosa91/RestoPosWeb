@@ -6,10 +6,18 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
+import javax.annotation.PostConstruct;
 import java.awt.*;
+import java.util.Date;
+import java.util.TimeZone;
 
 @SpringBootApplication
 public class RestoPosWebApplication {
+
+    @PostConstruct
+    public void init(){
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));   // It will set UTC timezone
+    }
 
     public static void main(String[] args) {
 
