@@ -186,4 +186,23 @@ public class Bill {
     public void setDuration(long duration) {
         this.duration = duration;
     }
+
+    @Override
+    public String toString() {
+        Calendar calendar = (dateTimeFinal != null) ? dateTimeFinal : Calendar.getInstance();
+        return "Bill{" +
+               "id=" +
+               id +
+               ", consecutive=" +
+               consecutive +
+               ", consumption=" +
+               consumption +
+               ", dateTimeStart=" +
+               dateTimeStart.getTime() +
+               ", dateTimeFinal=" +
+               calendar.getTime() +
+               ", duration=" +
+               duration +
+               '}';
+    }
 }

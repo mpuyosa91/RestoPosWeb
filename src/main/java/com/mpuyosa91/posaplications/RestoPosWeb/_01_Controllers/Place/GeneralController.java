@@ -366,13 +366,15 @@ public class GeneralController {
         restTemplate.put("http://" + host + ":" + port + "/customer/" + customer.getId() + "/open", Bill.class);
     }
 
-    public static void closeCustomer(Customer customer) {
+    public static void closeCustomer(Customer customer, boolean printBill) {
 
         String host = localSettings.getProperty("host");
         String port = localSettings.getProperty("port");
 
-        Map<String, UUID> sendToKitchen = new HashMap<>();
-        sendToKitchen.put("pos", UUID.randomUUID());
+        Map<String, String> sendToKitchen = new HashMap<>();
+        sendToKitchen.put("pos", UUID.randomUUID().toString());
+        sendToKitchen.put("kitchen", UUID.randomUUID().toString());
+        sendToKitchen.put("print_bill", (printBill) ? "true" : "false");
 
         restTemplate.put("http://" + host + ":" + port + "/customer/" + customer.getId() + "/close",
                          sendToKitchen,
@@ -416,7 +418,7 @@ public class GeneralController {
         String   host     = localSettings.getProperty("host");
         String   port     = localSettings.getProperty("port");
 
-        GeneralController.closeCustomer(customer);
+        GeneralController.closeCustomer(customer, false);
 
         Bill bill = restTemplate.getForObject("http://" +
                                               host +
@@ -432,8 +434,21 @@ public class GeneralController {
 
     }
 
-    public static Bill printBill(ICustomer customer) {
-        return null;
+    public static Bill printBill(ICustomer cliente) {
+        Customer customer = (Customer) cliente;
+        String   host     = localSettings.getProperty("host");
+        String   port     = localSettings.getProperty("port");
+
+        GeneralController.closeCustomer(customer, true);
+
+        Bill bill = restTemplate.getForObject("http://" +
+                                              host +
+                                              ":" +
+                                              port +
+                                              "/bill/" +
+                                              customer.getCurrentBill().getId(), Bill.class);
+
+        return bill;
     }
 
     public static boolean sendToKitchen(ICustomer cliente) {
@@ -447,6 +462,25 @@ public class GeneralController {
         restTemplate.put("http://" + host + ":" + port + "/customer/" + customer.getId() + "/sent_to_kitchen",
                          sendToKitchen,
                          ResponseEntity.class);
+
+        return true;
+    }
+
+    public static boolean printShift(Calendar start_time_calendar, Calendar end_time_calendar) {
+        String host = localSettings.getProperty("host");
+        String port = localSettings.getProperty("port");
+
+        int start_time = (int) (start_time_calendar.getTimeInMillis() / 1000.0);
+        int end_time   = (int) (end_time_calendar.getTimeInMillis() / 1000.0);
+
+        Map<String, UUID> getTurnoFacturation = new HashMap<>();
+        getTurnoFacturation.put("pos", UUID.randomUUID());
+
+        String
+                url =
+                "http://" + host + ":" + port + "/site/" + site.getId() + "/print_shift/" + start_time + "/" + end_time;
+
+        restTemplate.put(url, getTurnoFacturation, ResponseEntity.class);
 
         return true;
     }

@@ -49,6 +49,9 @@ dependencies {
 
     compile 'org.springframework.boot:spring-boot-starter-web'
 
+    //actuator
+    //compile('org.springframework.boot:spring-boot-starter-actuator')
+
     //runtimeClasspath 'com.h2database:h2'
 
     testCompile 'org.springframework.boot:spring-boot-starter-test'

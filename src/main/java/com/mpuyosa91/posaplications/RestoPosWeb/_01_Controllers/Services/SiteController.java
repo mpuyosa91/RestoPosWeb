@@ -1,17 +1,18 @@
 package com.mpuyosa91.posaplications.RestoPosWeb._01_Controllers.Services;
 
+import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Accounting.Bill;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Crew.User;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Customers.Customer;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Customers.CustomerTable;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Customers.ExternalCustomer;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Customers.PointOfService;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.InventoryItem;
+import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndSupplies.SalableItem;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.Site;
-import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.CustomerRepository;
-import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.InventoryRepository;
-import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.SiteRepository;
-import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.UserRepository;
+import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Printers.PrinterModel;
+import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.*;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.SettingsAndProperties.LocalSettings;
+import com.mpuyosa91.posaplications.RestoPosWeb._01_Controllers.Place.PrinterController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.*;
@@ -19,32 +20,34 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Controller
 @RequestMapping(path = "/site")
 public class SiteController {
+
+    private static final PrinterModel PRINTER = new PrinterModel();
 
     private final Environment         environment;
     private final SiteRepository      siteRepository;
     private final UserRepository      userRepository;
     private final CustomerRepository  customerRepository;
     private final InventoryRepository inventoryRepository;
+    private final BillRepository      billRepository;
 
     @Autowired
     public SiteController(SiteRepository siteRepository,
                           UserRepository userRepository,
                           CustomerRepository customerRepository,
                           Environment environment,
-                          InventoryRepository inventoryRepository) {
+                          InventoryRepository inventoryRepository,
+                          BillRepository billRepository) {
         this.siteRepository = siteRepository;
         this.userRepository = userRepository;
         this.customerRepository = customerRepository;
         this.environment = environment;
         this.inventoryRepository = inventoryRepository;
+        this.billRepository = billRepository;
     }
 
     @PostMapping(path = "/")
@@ -417,6 +420,58 @@ public class SiteController {
         return null;
     }
 
+    @PutMapping(path = "/{site_id}/print_shift/{start_time}/{end_time}")
+    public @ResponseBody
+    Iterable<Bill> printShift(@PathVariable UUID site_id,
+                              @PathVariable Integer start_time,
+                              @PathVariable Integer end_time,
+                              @RequestBody Map<String, String> json) {
+        boolean
+                canPrint =
+                siteRepository.findById(site_id).isPresent() && start_time < end_time && json.get("pos") != null;
+
+        if (canPrint) {
+            Site     site                = siteRepository.findById(site_id).get();
+            Calendar start_time_calendar = Calendar.getInstance();
+            start_time_calendar.setTimeInMillis(start_time * 1000L);
+            Calendar end_time_calendar = Calendar.getInstance();
+            start_time_calendar.setTimeInMillis(end_time * 1000L);
+            Iterable<Bill> iterableBill = billRepository.findBillsOfSiteInRange(site.getId(),
+                                                                                start_time_calendar,
+                                                                                end_time_calendar
+            );
+
+            // Imprimir el turno
+            // UUID pos_id = UUID.fromString(json.get("pos"));
+            // POS pos = posRepository.findById(pos_id).get();
+            // printShift(bill,pos.getPrinterName());
+            // posRepository.save(pos);
+
+            Calendar.getInstance(Locale.getDefault());
+
+            System.out.println("[PRINTSHIFT] Printing bills in range: (" +
+                               start_time_calendar.getTime() +
+                               " to " +
+                               end_time_calendar.getTime() +
+                               ")");
+
+            boolean printed = false;
+            try {
+                printed = printShift(iterableBill, "CognitiveTPG Receipt", start_time_calendar, end_time_calendar);
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                if (!printed) {
+                    System.out.println("[PRINTSHIFT] Error tratando de imprimir el reporte de turno.");
+                }
+            }
+
+            return iterableBill;
+        }
+
+        return null;
+    }
+
     @DeleteMapping(path = "/{site_id}")
     public ResponseEntity delete(@PathVariable UUID site_id) {
         try {
@@ -426,6 +481,96 @@ public class SiteController {
             return ResponseEntity.badRequest().build();
         }
 
+    }
+
+    private boolean printShift(Iterable<Bill> bills, String printerName, Calendar start_time, Calendar end_time) {
+        String line44;
+        int idLen = 5, priceLen = 6, quantLen = 4, subTLen = 8,
+                itemLen =
+                        PRINTER.getLineSize() - (idLen + priceLen + quantLen + subTLen);
+        PRINTER.resetAll();
+        PRINTER.initialize();
+        PRINTER.feedBack((byte) 2);
+        PRINTER.setFont(4, true);
+        PRINTER.setTextLeft(PrinterController.billHeader());
+        PRINTER.setFont(2, false);
+        PRINTER.addLineSeperator();
+        PRINTER.newLine();
+        PRINTER.setTextLeft(PrinterController.dateTimeHeader(Calendar.getInstance()));
+        PRINTER.newLine();
+        PRINTER.setTextLeft("Ventas entre:");
+        PRINTER.newLine();
+        PRINTER.setTextLeft(PrinterController.dateTimeHeader(start_time));
+        PRINTER.newLine();
+        PRINTER.setTextLeft(PrinterController.dateTimeHeader(end_time));
+        PRINTER.newLine();
+        PRINTER.setTextCenter(" - Detalles de Turno - ");
+        PRINTER.addLineSeperator();
+        PRINTER.newLine();
+        line44 = PrinterController.stringToLeftAndFill("Nro", idLen - 1, "fill").concat(" ");
+        line44 += PrinterController.stringToLeftAndFill("Item", itemLen - 1, "truncate").concat(" ");
+        line44 += PrinterController.stringToRightAndFill("Prec", priceLen - 1, "fill").concat(" ");
+        line44 += PrinterController.stringToRightAndFill("#", quantLen - 1, "fill").concat(" ");
+        line44 += PrinterController.stringToRightAndFill("SubT.", subTLen, "fill");
+        PRINTER.setTextLeft(line44);
+        PRINTER.newLine();
+        PRINTER.addLineSeperator();
+        PRINTER.newLine();
+
+        HashMap<UUID, Integer>     uuidIntegerBillHashMap     = new HashMap<>();
+        HashMap<UUID, SalableItem> uuidSalableItemBillHashMap = new HashMap<>();
+        double                     totalSale                  = 0;
+        for (Bill bill : bills) {
+            for (SalableItem salableItem : bill.getSalableItems()) {
+
+                int  quantity;
+                UUID uuid = salableItem.getId();
+                if (uuidIntegerBillHashMap.containsKey(uuid)) {
+                    quantity = uuidIntegerBillHashMap.get(uuid) + 1;
+                } else {
+                    quantity = 1;
+                    uuidSalableItemBillHashMap.put(uuid, salableItem);
+                }
+
+                uuidIntegerBillHashMap.put(uuid, quantity);
+                totalSale += salableItem.getPrice();
+
+            }
+        }
+
+        for (Map.Entry<UUID, Integer> entry : uuidIntegerBillHashMap.entrySet()) {
+
+            SalableItem salableItem = uuidSalableItemBillHashMap.get(entry.getKey());
+
+            String id = String.valueOf(salableItem.getSerial());
+            line44 = PrinterController.stringToLeftAndFill(id, idLen - 1, "fill").concat(" ");
+            String name = salableItem.getName();
+            line44 += PrinterController.stringToLeftAndFill(name, itemLen - 1, "truncate").concat(" ");
+            String price = String.valueOf((int) salableItem.getPrice());
+            line44 += PrinterController.stringToRightAndFill(price, priceLen - 1, "fill").concat(" ");
+
+            String quantity = String.valueOf((int) entry.getValue());
+            line44 += PrinterController.stringToRightAndFill(quantity, quantLen - 1, "fill").concat(" ");
+
+            String subT = String.valueOf((int) (salableItem.getPrice() * entry.getValue()));
+            line44 += PrinterController.stringToRightAndFill(subT, subTLen, "fill");
+
+            PRINTER.setTextLeft(line44);
+            PRINTER.newLine();
+        }
+
+        PRINTER.addLineSeperator();
+        PRINTER.newLine();
+        PRINTER.setTextRight("Total: " + totalSale);
+        PRINTER.newLine();
+        PRINTER.addLineSeperator();
+        PRINTER.newLine();
+        PRINTER.setTextCenter("Total sin incluir la \"Base\" ");
+        PRINTER.newLine();
+        PRINTER.setTextCenter("Recuerde entregar la estacion en Buen Estado");
+        PRINTER.feed((byte) 3);
+        PRINTER.finitWithDrawer();
+        return PrinterModel.feedPrinter(PRINTER.finalCommandSet().getBytes(), printerName);
     }
 
 }

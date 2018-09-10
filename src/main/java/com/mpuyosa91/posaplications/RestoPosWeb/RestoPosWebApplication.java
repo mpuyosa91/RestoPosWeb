@@ -8,7 +8,6 @@ import org.springframework.context.ConfigurableApplicationContext;
 
 import javax.annotation.PostConstruct;
 import java.awt.*;
-import java.util.Date;
 import java.util.TimeZone;
 
 @SpringBootApplication

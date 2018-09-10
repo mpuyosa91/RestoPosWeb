@@ -302,7 +302,7 @@ public class CustomerController {
 
                 Customer customer = customerRepository.findById(customer_id).get();
 
-                printCommand(customer, "CognitiveTPG Receipt");
+                sendToKitchen(customer);
 
                 // UUID kitchen_id = UUID.fromString(json.get("kitchen"));
                 // Kitchen kitchen = kitchenRepository.findById(kitchen_id).get();
@@ -321,8 +321,9 @@ public class CustomerController {
 
     @PutMapping(path = "/{customer_id}/close")
     public @ResponseBody
-    Bill close(@PathVariable UUID customer_id, @RequestBody Map<String, UUID> json) {
-        boolean canClose = customerRepository.findById(customer_id).isPresent() && json.get("pos") != null;
+    Bill close(@PathVariable UUID customer_id, @RequestBody Map<String, String> json) {
+        boolean canClose = customerRepository.findById(customer_id).isPresent() && json.get("pos") != null && json.get(
+                "kitchen") != null && json.get("print_bill") != null;
         Bill    bill     = null;
 
         if (canClose) {
@@ -337,20 +338,57 @@ public class CustomerController {
                 // kitchen.sendToKitchen(customer,kitchen);
                 // kitchenRepository.save(kitchen);
 
+                sendToKitchen(customer);
+
                 // Imprimir la factura
                 // UUID pos_id = UUID.fromString(json.get("pos"));
                 // POS pos = posRepository.findById(pos_id).get();
-                // pos.printBill(customer,pos);
+                // printBill(bill,pos.getPrinterName());
                 // posRepository.save(pos);
+
+                boolean printed = false;
+                boolean opened  = false;
+                try {
+                    if (!json.get("print_bill").equals("true")) {
+                        printed = printBill(bill, "CognitiveTPG Receipt");
+                        opened = printed;
+                    } else {
+                        printed = true;
+                        opened = openTrack("CognitiveTPG Receipt");
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    if (!opened) {
+                        System.out.println("[CLOSE] Error tratando de abrir la caja.");
+                    }
+                    if (!printed) {
+                        System.out.println("[CLOSE] Error tratando de imprimir la factura.");
+                    }
+                }
 
                 customer.clean();
 
                 customerRepository.save(customer);
+                System.out.println("[CLOSE]" + bill.toString());
                 billRepository.save(bill);
             }
         }
 
         return bill;
+    }
+
+    private void sendToKitchen(Customer customer) {
+        boolean sended = false;
+        try {
+            sended = printCommand(customer, "CognitiveTPG Receipt");
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (!sended) {
+                System.out.println("[SENDTOKITCHEN] Error tratando de imprimir la comanda.");
+            }
+        }
     }
 
     @DeleteMapping(path = "/{customer_id}")
@@ -444,7 +482,6 @@ public class CustomerController {
         PRINTER.initialize();
         PRINTER.finitOnlyDrawer();
         return PrinterModel.feedPrinter(PRINTER.finalCommandSet().getBytes(), printerName);
-        //"CognitiveTPG Receipt"
     }
 
     private boolean printBill(Bill bill, String printerName) {

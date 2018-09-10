@@ -213,7 +213,7 @@ public class PedidosFrame extends WindowFrame {
                                                           options[0]);
                 switch (option) {
                     case 0:
-                        bill = GeneralController.saveBill(cliente);
+                        bill = GeneralController.printBill(cliente);
                         setPedidoListLabelAndButtons();
                         ingresarCodigoTextField.setText("");
                         cerrarClienteButton.setEnabled(false);
@@ -222,7 +222,7 @@ public class PedidosFrame extends WindowFrame {
                         consoleAppend("<<" + cliente.getIdentifier() + " Cerrada>> Consumo: " + bill.getConsumption());
                         break;
                     case 1:
-                        bill = GeneralController.printBill(cliente);
+                        bill = GeneralController.saveBill(cliente);
                         setPedidoListLabelAndButtons();
                         ingresarCodigoTextField.setText("");
                         cerrarClienteButton.setEnabled(false);

@@ -5,7 +5,6 @@ import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Entities.ProductsAndS
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.BillRepository;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.SalableItemRepository;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.SiteRepository;
-import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.Repositories.UserRepository;
 import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.SettingsAndProperties.LocalSettings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,17 +19,14 @@ import java.util.UUID;
 @RequestMapping(path = "/bill")
 public class BillController {
 
-    private final UserRepository        userRepository;
     private final SiteRepository        siteRepository;
     private final BillRepository        billRepository;
     private final SalableItemRepository salableItemRepository;
 
     @Autowired
-    public BillController(UserRepository userRepository,
-                          SiteRepository siteRepository,
+    public BillController(SiteRepository siteRepository,
                           BillRepository billRepository,
                           SalableItemRepository salableItemRepository) {
-        this.userRepository = userRepository;
         this.siteRepository = siteRepository;
         this.billRepository = billRepository;
         this.salableItemRepository = salableItemRepository;
@@ -95,7 +91,7 @@ public class BillController {
     }
 
     @GetMapping("/salable_item/{salable_id}")
-    @ResponseBody
+    public @ResponseBody
     SalableItem getSalableItem(@PathVariable UUID salable_id) {
         return salableItemRepository.findById(salable_id).get();
     }

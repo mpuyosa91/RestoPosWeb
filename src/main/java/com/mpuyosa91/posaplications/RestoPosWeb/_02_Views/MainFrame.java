@@ -9,6 +9,7 @@ import com.mpuyosa91.posaplications.RestoPosWeb._00_Models.SettingsAndProperties
 import com.mpuyosa91.posaplications.RestoPosWeb._02_Views._1_Pedidos.PedidosPanel;
 import com.mpuyosa91.posaplications.RestoPosWeb._02_Views._2_Inventario.InventarioPanel;
 import com.mpuyosa91.posaplications.RestoPosWeb._02_Views._3_Personal.PersonalPanel;
+import com.mpuyosa91.posaplications.RestoPosWeb._02_Views._4_Ventas.VentasPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -32,7 +33,7 @@ public class MainFrame extends JFrame {
     private      PedidosPanel    panelPedidos;
     private      InventarioPanel panelInventario;
     private      PersonalPanel   panelPersonal;
-//    private      VentasPanel        panelVentas;
+    private      VentasPanel     panelVentas;
     //private EstadisticasPanel panelEstadisticas;
 //    private      ConfiguracionPanel panelConfiguracion;
 
@@ -65,8 +66,8 @@ public class MainFrame extends JFrame {
         panelInventario.setLayout(null);
         panelPersonal = new PersonalPanel(this);
         panelPersonal.setLayout(null);
-//        panelVentas = new VentasPanel();
-//        panelVentas.setLayout(null);
+        panelVentas = new VentasPanel();
+        panelVentas.setLayout(null);
 //        panelEstadisticas   = new EstadisticasPanel(this)       panelEstadisticas.setLayout(null);
 //        panelConfiguracion = new ConfiguracionPanel();
 //        panelConfiguracion.setLayout(null);
@@ -74,7 +75,7 @@ public class MainFrame extends JFrame {
         panelPedidos.setVisible(false);
         panelInventario.setVisible(false);
         panelPersonal.setVisible(false);
-//        panelVentas.setVisible(false);
+        panelVentas.setVisible(false);
 //        panelEstadisticas.setVisible(false);
 //        panelConfiguracion.setVisible(false);
 
@@ -82,14 +83,14 @@ public class MainFrame extends JFrame {
         this.add(panelPedidos);
         this.add(panelInventario);
         this.add(panelPersonal);
-//        this.add(panelVentas);
+        this.add(panelVentas);
         //this.add(panelEstadisticas);
         //this.add(panelConfiguracion);
 
         panelPedidos.setBounds(0, 0, this.horizontalSeparation, this.ySize);
         panelInventario.setBounds(0, 0, this.horizontalSeparation, this.ySize);
         panelPersonal.setBounds(0, 0, this.horizontalSeparation, this.ySize);
-        /*        panelVentas.setBounds(0, 0, this.horizontalSeparation, this.ySize);*/
+        panelVentas.setBounds(0, 0, this.horizontalSeparation, this.ySize);
         //panelEstadisticas.setBounds (   0                           ,   0   ,  this.horizontalSeparation  ,   this.ySize   );
         //panelConfiguracion.setBounds(0, 0, this.horizontalSeparation, this.ySize);
         mainPanel.setBounds(this.horizontalSeparation, 0, this.horizontalSeparation, this.ySize);
@@ -105,7 +106,7 @@ public class MainFrame extends JFrame {
         panelPedidos.show_hide(false);
         panelInventario.setVisible(false);
         panelPersonal.setVisible(false);
-        //panelVentas.setVisible(false);
+        panelVentas.setVisible(false);
         //panelEstadisticas.setVisible(false);
         //panelConfiguracion.setVisible(false);
         switch (i) {
@@ -123,7 +124,7 @@ public class MainFrame extends JFrame {
                 break;
             case 4:
                 btnVentas.setBackground(Color.darkGray);
-                //panelVentas.setVisible(true);
+                panelVentas.setVisible(true);
                 break;
             case 5:
                 btnEstadisticas.setBackground(Color.darkGray);
@@ -161,7 +162,7 @@ public class MainFrame extends JFrame {
         btnPedidos.setEnabled(true);
         btnInventario.setEnabled(true);
         btnPersonal.setEnabled(true);
-        btnVentas.setEnabled(false);
+        btnVentas.setEnabled(true);
         btnEstadisticas.setEnabled(false);
         btnConfiguracion.setEnabled(false);
         btnPedidos.addActionListener((ActionEvent e) -> {
